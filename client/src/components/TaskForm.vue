@@ -1,97 +1,157 @@
 <template>
   <!-- Backdrop -->
   <div
-    class="fixed inset-0 bg-black/40 z-40 flex items-center justify-center p-4"
-    @click.self="$emit('close')"
+    class="fixed inset-0 z-40 flex"
+    role="dialog"
+    aria-modal="true"
+    :aria-label="task ? 'Edit task' : 'New task'"
   >
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md z-50">
-      <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-        <h2 class="text-lg font-semibold text-gray-900">{{ task ? 'Edit Task' : 'New Task' }}</h2>
-        <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+    <!-- Dimmed backdrop -->
+    <div
+      class="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm animate-fade-in"
+      @click="$emit('close')"
+      aria-hidden="true"
+    />
+
+    <!-- Drawer panel -->
+    <div class="relative ml-auto w-full max-w-md bg-white shadow-drawer flex flex-col h-full animate-slide-in-right">
+      <!-- Drawer header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-200 flex-shrink-0">
+        <div>
+          <h2 class="text-base font-semibold text-zinc-900">{{ task ? 'Edit Task' : 'New Task' }}</h2>
+          <p class="text-xs text-zinc-400 mt-0.5">{{ task ? 'Update the details below' : 'Fill in the details below' }}</p>
+        </div>
+        <button
+          @click="$emit('close')"
+          class="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+          aria-label="Close drawer"
+        >
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
 
-      <form @submit.prevent="handleSubmit" class="px-6 py-5 space-y-4">
+      <!-- Form -->
+      <form @submit.prevent="handleSubmit" class="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+        <!-- Title -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Title <span class="text-red-500">*</span></label>
+          <label class="block text-sm font-medium text-zinc-700 mb-1.5" for="task-title">
+            Title <span class="text-red-500" aria-hidden="true">*</span>
+          </label>
           <input
+            id="task-title"
             v-model="form.title"
             type="text"
             required
-            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+            autofocus
+            class="input"
             placeholder="What needs to be done?"
           />
         </div>
 
+        <!-- Description -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label class="block text-sm font-medium text-zinc-700 mb-1.5" for="task-desc">
+            Description
+          </label>
           <textarea
+            id="task-desc"
             v-model="form.description"
             rows="3"
-            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
-            placeholder="Optional details…"
+            class="input resize-none"
+            placeholder="Add more context or details…"
           />
         </div>
 
+        <!-- Status + Priority -->
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <select
-              v-model="form.status"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white"
-            >
-              <option value="todo">To Do</option>
-              <option value="in-progress">In Progress</option>
-              <option value="done">Done</option>
-            </select>
+            <label class="block text-sm font-medium text-zinc-700 mb-1.5" for="task-status">Status</label>
+            <div class="relative">
+              <select id="task-status" v-model="form.status" class="input pr-8 appearance-none">
+                <option value="todo">To Do</option>
+                <option value="in-progress">In Progress</option>
+                <option value="done">Done</option>
+              </select>
+              <svg class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+              </svg>
+            </div>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-            <select
-              v-model="form.priority"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white"
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
+            <label class="block text-sm font-medium text-zinc-700 mb-1.5" for="task-priority">Priority</label>
+            <div class="relative">
+              <select id="task-priority" v-model="form.priority" class="input pr-8 appearance-none">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+              <svg class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+              </svg>
+            </div>
           </div>
         </div>
 
+        <!-- Priority indicator -->
+        <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-50 border border-zinc-200">
+          <span :class="['w-2.5 h-2.5 rounded-full flex-shrink-0', priorityDot]" aria-hidden="true" />
+          <span class="text-xs text-zinc-500">
+            <span class="font-medium capitalize">{{ form.priority }}</span> priority ·
+            <span class="capitalize">{{ { todo: 'Not started', 'in-progress': 'In progress', done: 'Completed' }[form.status] }}</span>
+          </span>
+        </div>
+
+        <!-- Due date -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+          <label class="block text-sm font-medium text-zinc-700 mb-1.5" for="task-due">Due Date</label>
           <input
+            id="task-due"
             v-model="form.due_date"
             type="date"
-            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+            class="input"
           />
         </div>
 
-        <p v-if="errorMsg" class="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{{ errorMsg }}</p>
-
-        <div class="flex justify-end gap-3 pt-2">
-          <button
-            type="button"
-            @click="$emit('close')"
-            class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            :disabled="saving"
-            class="px-4 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 rounded-lg transition-colors"
-          >
-            {{ saving ? 'Saving…' : (task ? 'Save changes' : 'Create task') }}
-          </button>
+        <!-- Error -->
+        <div
+          v-if="errorMsg"
+          role="alert"
+          class="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2.5 rounded-lg"
+        >
+          <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+          </svg>
+          {{ errorMsg }}
         </div>
       </form>
+
+      <!-- Footer actions -->
+      <div class="px-6 py-4 border-t border-zinc-200 flex items-center gap-3 flex-shrink-0 bg-zinc-50">
+        <button type="button" @click="$emit('close')" class="btn-secondary">
+          Cancel
+        </button>
+        <button
+          type="submit"
+          :disabled="saving"
+          class="btn-primary flex-1"
+          @click="handleSubmit"
+        >
+          <svg v-if="saving" class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          {{ saving ? 'Saving…' : task ? 'Save changes' : 'Create task' }}
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref, reactive, computed } from 'vue';
 
 const props = defineProps({
   task: { type: Object, default: null },
@@ -110,6 +170,12 @@ const form = reactive({
   priority: props.task?.priority || 'medium',
   due_date: props.task?.due_date || '',
 });
+
+const priorityDot = computed(() => ({
+  low: 'bg-zinc-400',
+  medium: 'bg-amber-400',
+  high: 'bg-rose-500',
+}[form.priority] || 'bg-zinc-400'));
 
 async function handleSubmit() {
   errorMsg.value = '';

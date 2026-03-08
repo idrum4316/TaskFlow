@@ -1,75 +1,135 @@
 <template>
-  <div
-    class="bg-white border border-gray-200 rounded-xl p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer group"
-    @click="$emit('edit')"
+  <article
+    draggable="true"
+    @dragstart="onDragStart"
+    @dragend="dragging = false"
+    class="bg-white rounded-xl shadow-card hover:shadow-card-hover border border-zinc-200/70 hover:border-zinc-300 transition-all duration-150 cursor-grab active:cursor-grabbing group focus-within:ring-2 focus-within:ring-brand-500 focus-within:ring-offset-1 overflow-hidden"
+    :class="{ 'opacity-60': task.status === 'done', 'opacity-40 scale-95': dragging }"
   >
-    <!-- Priority bar -->
-    <div class="flex items-start gap-2 mb-2">
-      <span :class="['mt-1 w-2 h-2 rounded-full flex-shrink-0', priorityColor]" :title="task.priority" />
-      <p class="text-sm font-medium text-gray-900 leading-snug flex-1">{{ task.title }}</p>
-    </div>
+    <!-- Priority left border -->
+    <div class="flex">
+      <div :class="['w-1 flex-shrink-0 rounded-l-xl', priorityBar]" aria-hidden="true" />
 
-    <p v-if="task.description" class="text-xs text-gray-500 mb-2 line-clamp-2 ml-4">
-      {{ task.description }}
-    </p>
-
-    <!-- Footer: due date + actions -->
-    <div class="flex items-center mt-2 ml-4 gap-2">
-      <span v-if="task.due_date" :class="['text-xs flex-1', overdue ? 'text-red-500' : 'text-gray-400']">
-        {{ overdue ? '⚠ ' : '' }}Due {{ formatDate(task.due_date) }}
-      </span>
-      <span v-else class="flex-1" />
-
-      <!-- Status move buttons (visible on hover) -->
-      <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" @click.stop>
+      <div class="flex-1 p-3 min-w-0">
+        <!-- Title row -->
         <button
-          v-for="target in moveTargets"
-          :key="target.status"
-          @click="$emit('status-change', target.status)"
-          :title="`Move to ${target.label}`"
-          class="text-xs text-gray-400 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 px-1.5 py-0.5 rounded transition-colors"
+          class="w-full text-left focus:outline-none"
+          @click="$emit('edit')"
+          :aria-label="`Edit task: ${task.title}`"
         >
-          {{ target.label }}
+          <p
+            :class="[
+              'text-sm font-medium leading-snug',
+              task.status === 'done' ? 'line-through text-zinc-400' : 'text-zinc-900',
+            ]"
+          >
+            {{ task.title }}
+          </p>
         </button>
-        <button
-          @click="$emit('delete')"
-          title="Delete"
-          class="text-xs text-gray-400 hover:text-red-500 bg-gray-100 hover:bg-red-50 px-1.5 py-0.5 rounded transition-colors"
+
+        <p v-if="task.description" class="mt-1 text-xs text-zinc-500 line-clamp-2">
+          {{ task.description }}
+        </p>
+
+        <!-- Footer -->
+        <div class="flex items-center mt-2.5 gap-2">
+          <!-- Due date -->
+          <span
+            v-if="task.due_date"
+            :class="[
+              'inline-flex items-center gap-1 text-xs rounded-md px-1.5 py-0.5',
+              overdue
+                ? 'text-red-700 bg-red-50 font-medium'
+                : 'text-zinc-400 bg-zinc-50',
+            ]"
+          >
+            <svg v-if="overdue" class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+              <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+            </svg>
+            {{ formatDate(task.due_date) }}
+          </span>
+
+          <div class="flex-1" />
+
+          <!-- Priority badge -->
+          <span :class="['text-xs font-medium rounded-full px-2 py-0.5', priorityBadge]">
+            {{ task.priority }}
+          </span>
+        </div>
+
+        <!-- Hover actions -->
+        <div
+          class="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-100"
+          @click.stop
+          role="group"
+          :aria-label="`Actions for ${task.title}`"
         >
-          ✕
-        </button>
+          <button
+            v-for="target in moveTargets"
+            :key="target.status"
+            @click="$emit('status-change', target.status)"
+            :class="['text-xs px-2 py-0.5 rounded-md transition-colors font-medium', target.style]"
+          >
+            → {{ target.label }}
+          </button>
+          <button
+            @click="$emit('delete')"
+            class="text-xs text-zinc-400 hover:text-red-600 hover:bg-red-50 px-2 py-0.5 rounded-md transition-colors ml-auto"
+            :aria-label="`Delete task: ${task.title}`"
+          >
+            Delete
+          </button>
+        </div>
       </div>
     </div>
-  </div>
+  </article>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps({ task: { type: Object, required: true } });
 defineEmits(['edit', 'delete', 'status-change']);
 
-const STATUS_LABELS = { todo: 'To Do', 'in-progress': 'In Progress', done: 'Done' };
+const dragging = ref(false);
 
-const priorityColor = computed(() => ({
-  low: 'bg-gray-300',
-  medium: 'bg-yellow-400',
-  high: 'bg-red-500',
-}[props.task.priority] || 'bg-gray-300'));
+function onDragStart(e) {
+  dragging.value = true;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('taskId', props.task._id);
+}
 
-const overdue = computed(() => {
-  if (!props.task.due_date) return false;
-  return new Date(props.task.due_date) < new Date() && props.task.status !== 'done';
-});
+const priorityBar = computed(() => ({
+  low: 'bg-zinc-300',
+  medium: 'bg-amber-400',
+  high: 'bg-rose-500',
+}[props.task.priority] || 'bg-zinc-300'));
 
-// Show buttons to move to the other two statuses
-const moveTargets = computed(() =>
-  Object.entries(STATUS_LABELS)
-    .filter(([s]) => s !== props.task.status)
-    .map(([status, label]) => ({ status, label }))
+const priorityBadge = computed(() => ({
+  low: 'bg-zinc-100 text-zinc-500',
+  medium: 'bg-amber-100 text-amber-700',
+  high: 'bg-rose-100 text-rose-700',
+}[props.task.priority] || 'bg-zinc-100 text-zinc-500'));
+
+const overdue = computed(() =>
+  !!props.task.due_date &&
+  props.task.status !== 'done' &&
+  new Date(props.task.due_date) < new Date()
 );
 
-function formatDate(dateStr) {
-  return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+const MOVE_TARGETS = {
+  todo: { label: 'To Do', style: 'text-zinc-600 hover:bg-zinc-100' },
+  'in-progress': { label: 'In Progress', style: 'text-brand-600 hover:bg-brand-50' },
+  done: { label: 'Done', style: 'text-emerald-700 hover:bg-emerald-50' },
+};
+
+const moveTargets = computed(() =>
+  Object.entries(MOVE_TARGETS)
+    .filter(([s]) => s !== props.task.status)
+    .map(([status, meta]) => ({ status, ...meta }))
+);
+
+function formatDate(d) {
+  return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 </script>

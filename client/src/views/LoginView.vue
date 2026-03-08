@@ -1,53 +1,104 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-    <div class="w-full max-w-md">
-      <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">TaskFlow</h1>
-        <p class="mt-2 text-gray-600">Sign in to manage your tasks</p>
+  <div class="min-h-screen flex">
+    <!-- Left panel: branding -->
+    <div
+      class="hidden lg:flex lg:w-[45%] flex-col justify-between p-12 bg-gradient-to-br from-brand-950 via-brand-900 to-indigo-900 text-white relative overflow-hidden"
+    >
+      <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
+        <div class="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-brand-600/20 blur-3xl" />
+        <div class="absolute -bottom-32 -left-24 w-96 h-96 rounded-full bg-indigo-600/20 blur-3xl" />
       </div>
 
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-        <form @submit.prevent="handleSubmit" class="space-y-5">
+      <div class="relative flex items-center gap-2.5">
+        <AppLogo class="w-8 h-8 text-brand-300" />
+        <span class="text-xl font-bold tracking-tight">TaskFlow</span>
+      </div>
+
+      <div class="relative space-y-5">
+        <h2 class="text-4xl font-bold leading-tight tracking-tight">
+          Organize your work,<br />ship what matters.
+        </h2>
+        <p class="text-brand-200 text-lg leading-relaxed max-w-xs">
+          Kanban boards, lists, and calendars — everything your team needs.
+        </p>
+      </div>
+
+      <p class="relative text-brand-400 text-sm">© {{ year }} TaskFlow</p>
+    </div>
+
+    <!-- Right panel: form -->
+    <div class="flex-1 flex items-center justify-center px-6 py-12 bg-zinc-50">
+      <div class="w-full max-w-sm animate-slide-up">
+        <!-- Mobile logo -->
+        <div class="flex items-center gap-2 mb-10 lg:hidden">
+          <AppLogo class="w-7 h-7 text-brand-600" />
+          <span class="text-lg font-bold tracking-tight text-zinc-900">TaskFlow</span>
+        </div>
+
+        <div class="mb-8">
+          <h1 class="text-2xl font-bold text-zinc-900">Welcome back</h1>
+          <p class="mt-1 text-zinc-500 text-sm">Sign in to your account to continue</p>
+        </div>
+
+        <form @submit.prevent="handleSubmit" class="space-y-4" novalidate>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1" for="email">Email</label>
+            <label class="block text-sm font-medium text-zinc-700 mb-1.5" for="email">
+              Email address
+            </label>
             <input
               id="email"
               v-model="email"
               type="email"
               required
               autocomplete="email"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+              class="input"
               placeholder="you@example.com"
+              :aria-invalid="!!errorMsg"
+              aria-describedby="login-error"
             />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1" for="password">Password</label>
+            <label class="block text-sm font-medium text-zinc-700 mb-1.5" for="password">
+              Password
+            </label>
             <input
               id="password"
               v-model="password"
               type="password"
               required
               autocomplete="current-password"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+              class="input"
               placeholder="••••••••"
             />
           </div>
 
-          <p v-if="errorMsg" class="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{{ errorMsg }}</p>
-
-          <button
-            type="submit"
-            :disabled="loading"
-            class="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+          <div
+            v-if="errorMsg"
+            id="login-error"
+            role="alert"
+            class="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2.5 rounded-lg"
           >
+            <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+            </svg>
+            {{ errorMsg }}
+          </div>
+
+          <button type="submit" :disabled="loading" class="btn-primary w-full">
+            <svg v-if="loading" class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
             {{ loading ? 'Signing in…' : 'Sign in' }}
           </button>
         </form>
 
-        <p class="mt-6 text-center text-sm text-gray-600">
+        <p class="mt-6 text-center text-sm text-zinc-500">
           Don't have an account?
-          <RouterLink to="/register" class="text-brand-600 hover:underline font-medium">Register</RouterLink>
+          <RouterLink to="/register" class="text-brand-600 hover:text-brand-700 font-semibold underline-offset-2 hover:underline">
+            Create one free
+          </RouterLink>
         </p>
       </div>
     </div>
@@ -55,15 +106,17 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import AppLogo from '@/components/AppLogo.vue';
 
 const authStore = useAuthStore();
 const email = ref('');
 const password = ref('');
 const errorMsg = ref('');
 const loading = ref(false);
+const year = computed(() => new Date().getFullYear());
 
 async function handleSubmit() {
   errorMsg.value = '';

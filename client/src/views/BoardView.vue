@@ -1,44 +1,69 @@
 <template>
   <div class="flex flex-col h-[calc(100vh-3.5rem)]">
-    <!-- Board header -->
-    <div class="flex items-center gap-3 px-6 py-3 bg-white border-b border-gray-200 flex-shrink-0">
-      <RouterLink to="/" class="text-gray-400 hover:text-gray-600 transition-colors text-sm">
-        ← Boards
+    <!-- Board sub-header -->
+    <div class="flex items-center gap-2 px-6 py-3 bg-white border-b border-zinc-200 flex-shrink-0">
+      <!-- Breadcrumb -->
+      <RouterLink
+        to="/"
+        class="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-700 transition-colors font-medium"
+      >
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+        </svg>
+        <span class="hidden sm:inline">Boards</span>
       </RouterLink>
-      <span class="text-gray-300">/</span>
-      <h2 class="font-semibold text-gray-900">{{ board?.name || '…' }}</h2>
+      <svg class="w-4 h-4 text-zinc-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+      </svg>
+      <h2 class="font-semibold text-zinc-900 text-sm truncate max-w-[160px]">
+        {{ board?.name || '…' }}
+      </h2>
 
       <!-- View switcher -->
-      <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-1 ml-4">
+      <div
+        class="flex items-center bg-zinc-100 rounded-lg p-1 ml-4"
+        role="tablist"
+        aria-label="Board view"
+      >
         <button
           v-for="v in views"
           :key="v.id"
+          role="tab"
+          :aria-selected="activeView === v.id"
+          :aria-label="v.label"
           @click="setView(v.id)"
-          :title="v.label"
           :class="[
-            'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+            'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150',
             activeView === v.id
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-500 hover:text-gray-700',
+              ? 'bg-white text-zinc-900 shadow-card'
+              : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-200/50',
           ]"
         >
-          <component :is="v.icon" class="w-4 h-4" />
+          <component :is="v.icon" class="w-4 h-4 flex-shrink-0" aria-hidden="true" />
           <span class="hidden sm:inline">{{ v.label }}</span>
         </button>
       </div>
 
-      <div class="ml-auto">
-        <button
-          @click="openCreate"
-          class="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          <span class="text-lg leading-none">+</span> Add Task
+      <div class="ml-auto flex-shrink-0">
+        <button @click="openCreate" class="btn-primary">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          <span class="hidden sm:inline">Add Task</span>
+          <span class="sm:hidden">Add</span>
         </button>
       </div>
     </div>
 
-    <!-- Error -->
-    <div v-if="tasksStore.error" class="text-center py-12 text-red-500 px-6 flex-shrink-0">
+    <!-- Error banner -->
+    <div
+      v-if="tasksStore.error"
+      role="alert"
+      class="flex items-center gap-2 text-sm text-red-700 bg-red-50 border-b border-red-200 px-6 py-3 flex-shrink-0"
+    >
+      <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+      </svg>
       {{ tasksStore.error }}
     </div>
 
@@ -53,7 +78,6 @@
         @delete="handleDelete"
         @status-change="handleStatusChange"
       />
-
       <TaskListView
         v-else-if="activeView === 'list'"
         :tasks="tasksStore.tasks"
@@ -61,8 +85,8 @@
         @add="openCreateInColumn"
         @edit="openEdit"
         @delete="handleDelete"
+        @status-change="handleStatusChange"
       />
-
       <TaskCalendarView
         v-else-if="activeView === 'calendar'"
         :tasks="tasksStore.tasks"
@@ -72,7 +96,7 @@
       />
     </template>
 
-    <!-- Task form modal -->
+    <!-- Task form drawer -->
     <TaskForm
       v-if="showForm"
       :task="editingTask"
@@ -102,7 +126,6 @@ const tasksStore = useTasksStore();
 const boardId = computed(() => route.params.id);
 const board = computed(() => boardsStore.boards.find((b) => b._id === boardId.value));
 
-// View mode — persisted in URL query param
 const activeView = computed(() => {
   const v = route.query.view;
   return ['kanban', 'list', 'calendar'].includes(v) ? v : 'kanban';
@@ -112,12 +135,12 @@ function setView(id) {
   router.replace({ query: { ...route.query, view: id } });
 }
 
-// Inline SVG icon components
+// Inline SVG icon render functions
 const KanbanIcon = {
   render: () => h('svg', { viewBox: '0 0 20 20', fill: 'currentColor' }, [
-    h('rect', { x: 2, y: 3, width: 4, height: 14, rx: 1 }),
-    h('rect', { x: 8, y: 3, width: 4, height: 9, rx: 1 }),
-    h('rect', { x: 14, y: 3, width: 4, height: 11, rx: 1 }),
+    h('rect', { x: 2, y: 3, width: 4, height: 14, rx: 1.5 }),
+    h('rect', { x: 8, y: 3, width: 4, height: 9, rx: 1.5 }),
+    h('rect', { x: 14, y: 3, width: 4, height: 11, rx: 1.5 }),
   ]),
 };
 const ListIcon = {
@@ -139,7 +162,6 @@ const views = [
   { id: 'calendar', label: 'Calendar', icon: CalendarIcon },
 ];
 
-// Task form state
 const showForm = ref(false);
 const editingTask = ref(null);
 const defaultStatus = ref('todo');
