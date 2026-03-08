@@ -7,12 +7,11 @@ export const useTasksStore = defineStore('tasks', () => {
   const loading = ref(false);
   const error = ref(null);
 
-  async function fetchTasks(status = null) {
+  async function fetchTasks(boardId) {
     loading.value = true;
     error.value = null;
     try {
-      const params = status ? { status } : {};
-      const { data } = await api.get('/tasks', { params });
+      const { data } = await api.get('/tasks', { params: { board_id: boardId } });
       tasks.value = data;
     } catch (err) {
       error.value = err.response?.data?.error || 'Failed to load tasks';
@@ -23,8 +22,12 @@ export const useTasksStore = defineStore('tasks', () => {
 
   async function createTask(payload) {
     const { data } = await api.post('/tasks', payload);
-    tasks.value.unshift(data);
+    tasks.value.push(data);
     return data;
+  }
+
+  function clearTasks() {
+    tasks.value = [];
   }
 
   async function updateTask(id, payload) {
@@ -39,5 +42,5 @@ export const useTasksStore = defineStore('tasks', () => {
     tasks.value = tasks.value.filter((t) => t._id !== id);
   }
 
-  return { tasks, loading, error, fetchTasks, createTask, updateTask, deleteTask };
+  return { tasks, loading, error, fetchTasks, createTask, updateTask, deleteTask, clearTasks };
 });

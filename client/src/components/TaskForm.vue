@@ -95,6 +95,8 @@ import { ref, reactive } from 'vue';
 
 const props = defineProps({
   task: { type: Object, default: null },
+  boardId: { type: String, default: null },
+  defaultStatus: { type: String, default: 'todo' },
 });
 const emit = defineEmits(['save', 'close']);
 
@@ -104,7 +106,7 @@ const errorMsg = ref('');
 const form = reactive({
   title: props.task?.title || '',
   description: props.task?.description || '',
-  status: props.task?.status || 'todo',
+  status: props.task?.status || props.defaultStatus,
   priority: props.task?.priority || 'medium',
   due_date: props.task?.due_date || '',
 });

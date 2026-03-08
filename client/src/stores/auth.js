@@ -19,13 +19,13 @@ export const useAuthStore = defineStore('auth', () => {
   async function register(username, email, password) {
     const { data } = await api.post('/auth/register', { username, email, password });
     setSession(data);
-    router.push({ name: 'tasks' });
+    router.push({ name: 'boards' });
   }
 
   async function login(email, password) {
     const { data } = await api.post('/auth/login', { email, password });
     setSession(data);
-    router.push({ name: 'tasks' });
+    router.push({ name: 'boards' });
   }
 
   function logout() {

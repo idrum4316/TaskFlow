@@ -1,6 +1,6 @@
 <template>
   <header class="bg-white border-b border-gray-200">
-    <div class="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+    <div class="max-w-screen-xl mx-auto px-6 h-14 flex items-center justify-between">
       <RouterLink to="/" class="text-lg font-bold text-gray-900 tracking-tight">TaskFlow</RouterLink>
 
       <div class="flex items-center gap-4">

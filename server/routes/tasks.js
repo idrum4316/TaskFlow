@@ -1,17 +1,17 @@
 const express = require('express');
-const { getTasksDb } = require('../config/couch');
+const { getTasksDb, getBoardsDb } = require('../config/couch');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
-
 router.use(requireAuth);
 
 const VALID_STATUSES = ['todo', 'in-progress', 'done'];
 const VALID_PRIORITIES = ['low', 'medium', 'high'];
 
-function validateTask(body) {
+function validateTask(body, requireBoardId = false) {
   const errors = [];
   if (!body.title || !body.title.trim()) errors.push('title is required');
+  if (requireBoardId && !body.board_id) errors.push('board_id is required');
   if (body.status && !VALID_STATUSES.includes(body.status)) {
     errors.push(`status must be one of: ${VALID_STATUSES.join(', ')}`);
   }
@@ -21,25 +21,44 @@ function validateTask(body) {
   return errors;
 }
 
-// GET /api/tasks
-router.get('/', async (req, res) => {
-  const db = getTasksDb();
-  const { status } = req.query;
+async function assertBoardOwnership(boardId, userId) {
+  const board = await getBoardsDb().get(boardId);
+  if (board.user_id !== userId) throw Object.assign(new Error('Forbidden'), { status: 403 });
+  return board;
+}
 
+// GET /api/tasks?board_id=xxx[&status=todo]
+router.get('/', async (req, res) => {
+  const { board_id, status } = req.query;
+
+  if (!board_id) {
+    return res.status(400).json({ error: 'board_id query parameter is required' });
+  }
+
+  // Verify the board belongs to this user
+  try {
+    await assertBoardOwnership(board_id, req.user.sub);
+  } catch (err) {
+    if (err.status === 403) return res.status(403).json({ error: 'Forbidden' });
+    if (err.statusCode === 404) return res.status(404).json({ error: 'Board not found' });
+    return res.status(500).json({ error: 'Failed to verify board' });
+  }
+
+  const db = getTasksDb();
   try {
     let docs;
     if (status && VALID_STATUSES.includes(status)) {
-      const result = await db.view('tasks', 'by_user_and_status', {
-        key: [req.user.sub, status],
+      const { rows } = await db.view('tasks', 'by_board_and_status', {
+        key: [board_id, status],
         include_docs: true,
       });
-      docs = result.rows.map((r) => r.doc);
+      docs = rows.map((r) => r.doc);
     } else {
-      const result = await db.view('tasks', 'by_user', {
-        key: req.user.sub,
+      const { rows } = await db.view('tasks', 'by_board', {
+        key: board_id,
         include_docs: true,
       });
-      docs = result.rows.map((r) => r.doc);
+      docs = rows.map((r) => r.doc);
     }
     res.json(docs);
   } catch (err) {
@@ -50,13 +69,23 @@ router.get('/', async (req, res) => {
 
 // POST /api/tasks
 router.post('/', async (req, res) => {
-  const errors = validateTask(req.body);
+  const errors = validateTask(req.body, true);
   if (errors.length) return res.status(400).json({ errors });
+
+  // Verify board ownership
+  try {
+    await assertBoardOwnership(req.body.board_id, req.user.sub);
+  } catch (err) {
+    if (err.status === 403) return res.status(403).json({ error: 'Forbidden' });
+    if (err.statusCode === 404) return res.status(404).json({ error: 'Board not found' });
+    return res.status(500).json({ error: 'Failed to verify board' });
+  }
 
   const now = new Date().toISOString();
   const doc = {
     type: 'task',
     user_id: req.user.sub,
+    board_id: req.body.board_id,
     title: req.body.title.trim(),
     description: req.body.description?.trim() || '',
     status: req.body.status || 'todo',
@@ -103,8 +132,21 @@ router.put('/:id', async (req, res) => {
 
   if (existing.user_id !== req.user.sub) return res.status(403).json({ error: 'Forbidden' });
 
+  // If moving to a different board, verify ownership of target board
+  const newBoardId = req.body.board_id ?? existing.board_id;
+  if (newBoardId !== existing.board_id) {
+    try {
+      await assertBoardOwnership(newBoardId, req.user.sub);
+    } catch (err) {
+      if (err.status === 403) return res.status(403).json({ error: 'Forbidden' });
+      if (err.statusCode === 404) return res.status(404).json({ error: 'Board not found' });
+      return res.status(500).json({ error: 'Failed to verify board' });
+    }
+  }
+
   const updated = {
     ...existing,
+    board_id: newBoardId,
     title: req.body.title.trim(),
     description: req.body.description?.trim() ?? existing.description,
     status: req.body.status ?? existing.status,

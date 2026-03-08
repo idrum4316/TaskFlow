@@ -12,10 +12,13 @@ const couch = nano(url.toString());
 
 let usersDb;
 let tasksDb;
+let boardsDb;
+let migrationsDb;
 
 const TASK_DESIGN_DOC = {
   _id: '_design/tasks',
   views: {
+    // Legacy: all tasks for a user (used by migrations)
     by_user: {
       map: `function (doc) {
         if (doc.type === 'task') {
@@ -23,10 +26,32 @@ const TASK_DESIGN_DOC = {
         }
       }`,
     },
-    by_user_and_status: {
+    // Primary: tasks for a board
+    by_board: {
       map: `function (doc) {
         if (doc.type === 'task') {
-          emit([doc.user_id, doc.status], null);
+          emit(doc.board_id, null);
+        }
+      }`,
+    },
+    // Tasks for a board filtered by status
+    by_board_and_status: {
+      map: `function (doc) {
+        if (doc.type === 'task') {
+          emit([doc.board_id, doc.status], null);
+        }
+      }`,
+    },
+  },
+};
+
+const BOARD_DESIGN_DOC = {
+  _id: '_design/boards',
+  views: {
+    by_user: {
+      map: `function (doc) {
+        if (doc.type === 'board') {
+          emit(doc.user_id, null);
         }
       }`,
     },
@@ -60,16 +85,16 @@ async function ensureDesignDoc(db, doc) {
 async function initDb() {
   usersDb = await ensureDb('todo_users');
   tasksDb = await ensureDb('todo_tasks');
+  boardsDb = await ensureDb('todo_boards');
+  migrationsDb = await ensureDb('todo_migrations');
   await ensureDesignDoc(tasksDb, TASK_DESIGN_DOC);
+  await ensureDesignDoc(boardsDb, BOARD_DESIGN_DOC);
   console.log('Database initialised');
 }
 
-function getUsersDb() {
-  return usersDb;
-}
+const getUsersDb = () => usersDb;
+const getTasksDb = () => tasksDb;
+const getBoardsDb = () => boardsDb;
+const getMigrationsDb = () => migrationsDb;
 
-function getTasksDb() {
-  return tasksDb;
-}
-
-module.exports = { initDb, getUsersDb, getTasksDb };
+module.exports = { initDb, getUsersDb, getTasksDb, getBoardsDb, getMigrationsDb };

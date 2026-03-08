@@ -16,8 +16,14 @@ const routes = [
   },
   {
     path: '/',
-    name: 'tasks',
-    component: () => import('@/views/TasksView.vue'),
+    name: 'boards',
+    component: () => import('@/views/BoardsView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/boards/:id',
+    name: 'kanban',
+    component: () => import('@/views/KanbanView.vue'),
     meta: { requiresAuth: true },
   },
 ];
@@ -34,7 +40,7 @@ router.beforeEach((to) => {
     return { name: 'login' };
   }
   if (to.meta.guest && auth.isAuthenticated) {
-    return { name: 'tasks' };
+    return { name: 'boards' };
   }
 });
 
