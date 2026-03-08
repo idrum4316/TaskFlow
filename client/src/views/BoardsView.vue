@@ -27,7 +27,7 @@
         :key="board._id"
         class="bg-white border border-gray-200 rounded-2xl p-5 hover:shadow-md transition-shadow group"
       >
-        <RouterLink :to="{ name: 'kanban', params: { id: board._id } }" class="block">
+        <RouterLink :to="{ name: 'board', params: { id: board._id } }" class="block">
           <div class="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center mb-3">
             <span class="text-brand-600 text-lg font-bold">{{ board.name[0].toUpperCase() }}</span>
           </div>
