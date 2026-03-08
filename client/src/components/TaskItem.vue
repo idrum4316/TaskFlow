@@ -1,0 +1,74 @@
+<template>
+  <li class="bg-white border border-gray-200 rounded-xl p-4 flex gap-4 hover:shadow-sm transition-shadow">
+    <!-- Priority indicator -->
+    <div class="flex-shrink-0 mt-0.5">
+      <span :class="['w-2.5 h-2.5 rounded-full block mt-1', priorityColor]" :title="task.priority" />
+    </div>
+
+    <!-- Content -->
+    <div class="flex-1 min-w-0">
+      <div class="flex items-start justify-between gap-2">
+        <h3
+          :class="['font-medium text-gray-900 truncate', task.status === 'done' && 'line-through text-gray-400']"
+        >
+          {{ task.title }}
+        </h3>
+        <span :class="['flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full', statusClass]">
+          {{ statusLabel }}
+        </span>
+      </div>
+
+      <p v-if="task.description" class="mt-1 text-sm text-gray-500 line-clamp-2">{{ task.description }}</p>
+
+      <div class="mt-2 flex items-center gap-3 text-xs text-gray-400">
+        <span v-if="task.due_date">Due {{ formatDate(task.due_date) }}</span>
+        <span class="capitalize">{{ task.priority }} priority</span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex-shrink-0 flex flex-col gap-1">
+      <button
+        @click="$emit('edit')"
+        class="text-xs text-gray-400 hover:text-brand-600 transition-colors px-2 py-1 rounded hover:bg-brand-50"
+      >
+        Edit
+      </button>
+      <button
+        @click="$emit('delete')"
+        class="text-xs text-gray-400 hover:text-red-500 transition-colors px-2 py-1 rounded hover:bg-red-50"
+      >
+        Delete
+      </button>
+    </div>
+  </li>
+</template>
+
+<script setup>
+import { computed } from 'vue';
+
+const props = defineProps({ task: { type: Object, required: true } });
+defineEmits(['edit', 'delete']);
+
+const priorityColor = computed(() => ({
+  low: 'bg-gray-300',
+  medium: 'bg-yellow-400',
+  high: 'bg-red-500',
+}[props.task.priority] || 'bg-gray-300'));
+
+const statusLabel = computed(() => ({
+  'todo': 'To Do',
+  'in-progress': 'In Progress',
+  'done': 'Done',
+}[props.task.status] || props.task.status));
+
+const statusClass = computed(() => ({
+  'todo': 'bg-gray-100 text-gray-600',
+  'in-progress': 'bg-blue-100 text-blue-700',
+  'done': 'bg-green-100 text-green-700',
+}[props.task.status] || 'bg-gray-100 text-gray-600'));
+
+function formatDate(dateStr) {
+  return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+</script>
