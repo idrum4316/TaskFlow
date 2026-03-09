@@ -51,6 +51,14 @@ const TASK_DESIGN_DOC = {
         }
       }`,
     },
+    // Attachments for a task
+    attachments_by_task: {
+      map: `function (doc) {
+        if (doc.type === 'attachment') {
+          emit(doc.task_id, null);
+        }
+      }`,
+    },
   },
 };
 

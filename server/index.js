@@ -3,6 +3,7 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const { initDb } = require('./config/couch');
+const { ensureBucket } = require('./config/s3');
 const { runMigrations } = require('./migrations/runner');
 const authRoutes = require('./routes/auth');
 const boardRoutes = require('./routes/boards');
@@ -13,6 +14,7 @@ const userRoutes = require('./routes/users');
 const commentRoutes = require('./routes/comments');
 const adminRoutes = require('./routes/admin');
 const accountRoutes = require('./routes/account');
+const attachmentRoutes = require('./routes/attachments');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,6 +29,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/tasks/:id/comments', commentRoutes);
+app.use('/api/tasks/:id/attachments', attachmentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/account', accountRoutes);
 
@@ -41,6 +44,7 @@ app.get(/^\/(?!api).*/, (_req, res) => {
 
 async function start() {
   await initDb();
+  await ensureBucket();
   await runMigrations();
   app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
 }

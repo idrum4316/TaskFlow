@@ -121,6 +121,9 @@
         <!-- Comments (edit mode only) -->
         <TaskComments v-if="task" :task-id="task._id" :board-id="boardId" />
 
+        <!-- Attachments (edit mode only) -->
+        <TaskAttachments v-if="task" :task-id="task._id" :read-only="readOnly" />
+
         <!-- Error -->
         <div
           v-if="errorMsg"
@@ -166,6 +169,7 @@
 <script setup>
 import { ref, reactive, computed } from 'vue';
 import TaskComments from './TaskComments.vue';
+import TaskAttachments from './TaskAttachments.vue';
 
 const props = defineProps({
   task: { type: Object, default: null },

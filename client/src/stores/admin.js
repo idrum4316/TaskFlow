@@ -23,8 +23,10 @@ export const useAdminStore = defineStore('admin', () => {
 
   async function toggleAdmin(userId) {
     const { data } = await api.put(`/admin/users/${userId}/toggle-admin`);
-    const idx = users.value.findIndex((u) => u._id === userId);
-    if (idx !== -1) users.value[idx] = data;
+    const idx = users.value.findIndex((u) => (u._id || u.id) === userId);
+    if (idx !== -1) {
+      users.value[idx] = { ...users.value[idx], is_admin: data.is_admin };
+    }
     return data;
   }
 

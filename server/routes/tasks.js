@@ -1,5 +1,7 @@
 const express = require('express');
+const { DeleteObjectsCommand } = require('@aws-sdk/client-s3');
 const { getTasksDb, getBoardsDb } = require('../config/couch');
+const { s3, S3_BUCKET, isS3Available } = require('../config/s3');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -194,6 +196,52 @@ router.delete('/:id', async (req, res) => {
   }
 
   try {
+    // Delete all attachments (S3 objects + CouchDB metadata)
+    try {
+      const { rows } = await db.view('tasks', 'attachments_by_task', {
+        key: existing._id,
+        include_docs: true,
+      });
+      if (rows.length > 0) {
+        // Delete S3 objects in batch (only if S3 is available)
+        if (isS3Available()) {
+          const s3Keys = rows.map((r) => ({ Key: r.doc.s3_key }));
+          await s3.send(new DeleteObjectsCommand({
+            Bucket: S3_BUCKET,
+            Delete: { Objects: s3Keys },
+          }));
+        }
+        // Delete CouchDB attachment docs
+        const bulkDocs = rows.map((r) => ({
+          _id: r.doc._id,
+          _rev: r.doc._rev,
+          _deleted: true,
+        }));
+        await db.bulk({ docs: bulkDocs });
+      }
+    } catch (err) {
+      console.error('Failed to clean up attachments:', err);
+      // Continue with task deletion regardless
+    }
+
+    // Delete associated comments
+    try {
+      const { rows: commentRows } = await db.view('tasks', 'by_task', {
+        key: existing._id,
+        include_docs: true,
+      });
+      if (commentRows.length > 0) {
+        const bulkDocs = commentRows.map((r) => ({
+          _id: r.doc._id,
+          _rev: r.doc._rev,
+          _deleted: true,
+        }));
+        await db.bulk({ docs: bulkDocs });
+      }
+    } catch (err) {
+      console.error('Failed to clean up comments:', err);
+    }
+
     await db.destroy(existing._id, existing._rev);
     res.status(204).end();
   } catch {
