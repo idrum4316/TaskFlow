@@ -3,7 +3,7 @@
     draggable="true"
     @dragstart="onDragStart"
     @dragend="dragging = false"
-    class="bg-white rounded-xl shadow-card hover:shadow-card-hover border border-zinc-200/70 hover:border-zinc-300 transition-all duration-150 cursor-grab active:cursor-grabbing group focus-within:ring-2 focus-within:ring-brand-500 focus-within:ring-offset-1 overflow-hidden"
+    class="bg-white dark:bg-zinc-800 rounded-xl shadow-card hover:shadow-card-hover border border-zinc-200/70 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-all duration-150 cursor-grab active:cursor-grabbing group focus-within:ring-2 focus-within:ring-brand-500 focus-within:ring-offset-1 dark:focus-within:ring-offset-zinc-800 overflow-hidden"
     :class="{ 'opacity-60': task.status === 'done', 'opacity-40 scale-95': dragging }"
   >
     <!-- Priority left border -->
@@ -20,14 +20,14 @@
           <p
             :class="[
               'text-sm font-medium leading-snug',
-              task.status === 'done' ? 'line-through text-zinc-400' : 'text-zinc-900',
+              task.status === 'done' ? 'line-through text-zinc-400 dark:text-zinc-500' : 'text-zinc-900 dark:text-zinc-100',
             ]"
           >
             {{ task.title }}
           </p>
         </button>
 
-        <p v-if="task.description" class="mt-1 text-xs text-zinc-500 line-clamp-2">
+        <p v-if="task.description" class="mt-1 text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2">
           {{ task.description }}
         </p>
 
@@ -39,8 +39,8 @@
             :class="[
               'inline-flex items-center gap-1 text-xs rounded-md px-1.5 py-0.5',
               overdue
-                ? 'text-red-700 bg-red-50 font-medium'
-                : 'text-zinc-400 bg-zinc-50',
+                ? 'text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/40 font-medium'
+                : 'text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-700/50',
             ]"
           >
             <svg v-if="overdue" class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
@@ -75,7 +75,7 @@
           </button>
           <button
             @click="$emit('delete')"
-            class="text-xs text-zinc-400 hover:text-red-600 hover:bg-red-50 px-2 py-0.5 rounded-md transition-colors ml-auto"
+            class="text-xs text-zinc-400 dark:text-zinc-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 px-2 py-0.5 rounded-md transition-colors ml-auto"
             :aria-label="`Delete task: ${task.title}`"
           >
             Delete
@@ -109,10 +109,10 @@ const priorityBar = computed(() => ({
 }[props.task.priority] || 'bg-zinc-300'));
 
 const priorityBadge = computed(() => ({
-  low: 'bg-zinc-100 text-zinc-500',
-  medium: 'bg-amber-100 text-amber-700',
-  high: 'bg-rose-100 text-rose-700',
-}[props.task.priority] || 'bg-zinc-100 text-zinc-500'));
+  low: 'bg-zinc-100 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400',
+  medium: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400',
+  high: 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-400',
+}[props.task.priority] || 'bg-zinc-100 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400'));
 
 const overdue = computed(() =>
   !!props.task.due_date &&
@@ -121,9 +121,9 @@ const overdue = computed(() =>
 );
 
 const MOVE_TARGETS = {
-  todo: { label: 'To Do', style: 'text-zinc-600 hover:bg-zinc-100' },
-  'in-progress': { label: 'In Progress', style: 'text-brand-600 hover:bg-brand-50' },
-  done: { label: 'Done', style: 'text-emerald-700 hover:bg-emerald-50' },
+  todo: { label: 'To Do', style: 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700' },
+  'in-progress': { label: 'In Progress', style: 'text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/40' },
+  done: { label: 'Done', style: 'text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/40' },
 };
 
 const moveTargets = computed(() =>

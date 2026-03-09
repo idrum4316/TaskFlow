@@ -14,16 +14,16 @@
     />
 
     <!-- Drawer panel -->
-    <div class="relative ml-auto w-full max-w-md bg-white shadow-drawer flex flex-col h-full animate-slide-in-right">
+    <div class="relative ml-auto w-full max-w-md bg-white dark:bg-zinc-900 shadow-drawer flex flex-col h-full animate-slide-in-right">
       <!-- Drawer header -->
-      <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-200 flex-shrink-0">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-700 flex-shrink-0">
         <div>
-          <h2 class="text-base font-semibold text-zinc-900">{{ task ? (readOnly ? 'View Task' : 'Edit Task') : 'New Task' }}</h2>
-          <p class="text-xs text-zinc-400 mt-0.5">{{ task ? (readOnly ? 'You have read-only access' : 'Update the details below') : 'Fill in the details below' }}</p>
+          <h2 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">{{ task ? (readOnly ? 'View Task' : 'Edit Task') : 'New Task' }}</h2>
+          <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">{{ task ? (readOnly ? 'You have read-only access' : 'Update the details below') : 'Fill in the details below' }}</p>
         </div>
         <button
           @click="$emit('close')"
-          class="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+          class="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
           aria-label="Close drawer"
         >
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -36,7 +36,7 @@
       <form @submit.prevent="handleSubmit" class="flex-1 overflow-y-auto px-6 py-5 space-y-5">
         <!-- Title -->
         <div>
-          <label class="block text-sm font-medium text-zinc-700 mb-1.5" for="task-title">
+          <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" for="task-title">
             Title <span class="text-red-500" aria-hidden="true">*</span>
           </label>
           <input
@@ -46,14 +46,14 @@
             required
             autofocus
             :disabled="readOnly"
-            class="input disabled:bg-zinc-50 disabled:text-zinc-500 disabled:cursor-default"
+            class="input disabled:bg-zinc-50 dark:disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-default"
             placeholder="What needs to be done?"
           />
         </div>
 
         <!-- Description -->
         <div>
-          <label class="block text-sm font-medium text-zinc-700 mb-1.5" for="task-desc">
+          <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" for="task-desc">
             Description
           </label>
           <textarea
@@ -61,7 +61,7 @@
             v-model="form.description"
             rows="3"
             :disabled="readOnly"
-            class="input resize-none disabled:bg-zinc-50 disabled:text-zinc-500 disabled:cursor-default"
+            class="input resize-none disabled:bg-zinc-50 dark:disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-default"
             placeholder="Add more context or details…"
           />
         </div>
@@ -69,9 +69,9 @@
         <!-- Status + Priority -->
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-zinc-700 mb-1.5" for="task-status">Status</label>
+            <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" for="task-status">Status</label>
             <div class="relative">
-              <select id="task-status" v-model="form.status" :disabled="readOnly" class="input pr-8 appearance-none disabled:bg-zinc-50 disabled:text-zinc-500 disabled:cursor-default">
+              <select id="task-status" v-model="form.status" :disabled="readOnly" class="input pr-8 appearance-none disabled:bg-zinc-50 dark:disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-default">
                 <option value="todo">To Do</option>
                 <option value="in-progress">In Progress</option>
                 <option value="done">Done</option>
@@ -83,9 +83,9 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-zinc-700 mb-1.5" for="task-priority">Priority</label>
+            <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" for="task-priority">Priority</label>
             <div class="relative">
-              <select id="task-priority" v-model="form.priority" :disabled="readOnly" class="input pr-8 appearance-none disabled:bg-zinc-50 disabled:text-zinc-500 disabled:cursor-default">
+              <select id="task-priority" v-model="form.priority" :disabled="readOnly" class="input pr-8 appearance-none disabled:bg-zinc-50 dark:disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-default">
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
@@ -98,9 +98,9 @@
         </div>
 
         <!-- Priority indicator -->
-        <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-50 border border-zinc-200">
+        <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700">
           <span :class="['w-2.5 h-2.5 rounded-full flex-shrink-0', priorityDot]" aria-hidden="true" />
-          <span class="text-xs text-zinc-500">
+          <span class="text-xs text-zinc-500 dark:text-zinc-400">
             <span class="font-medium capitalize">{{ form.priority }}</span> priority ·
             <span class="capitalize">{{ { todo: 'Not started', 'in-progress': 'In progress', done: 'Completed' }[form.status] }}</span>
           </span>
@@ -108,13 +108,13 @@
 
         <!-- Due date -->
         <div>
-          <label class="block text-sm font-medium text-zinc-700 mb-1.5" for="task-due">Due Date</label>
+          <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" for="task-due">Due Date</label>
           <input
             id="task-due"
             v-model="form.due_date"
             type="date"
             :disabled="readOnly"
-            class="input disabled:bg-zinc-50 disabled:text-zinc-500 disabled:cursor-default"
+            class="input disabled:bg-zinc-50 dark:disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-default"
           />
         </div>
 
@@ -135,7 +135,7 @@
       </form>
 
       <!-- Footer actions -->
-      <div class="px-6 py-4 border-t border-zinc-200 flex items-center gap-3 flex-shrink-0 bg-zinc-50">
+      <div class="px-6 py-4 border-t border-zinc-200 dark:border-zinc-700 flex items-center gap-3 flex-shrink-0 bg-zinc-50 dark:bg-zinc-800/50">
         <template v-if="readOnly">
           <button type="button" @click="$emit('close')" class="btn-primary flex-1">
             Close

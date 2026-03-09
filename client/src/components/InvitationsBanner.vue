@@ -1,23 +1,23 @@
 <template>
   <div v-if="invitations.length > 0" class="mb-6 space-y-2">
-    <h3 class="text-xs font-semibold text-zinc-500 uppercase tracking-wide px-1">
+    <h3 class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide px-1">
       Board Invitations
     </h3>
     <div
       v-for="inv in invitations"
       :key="inv.board_id"
-      class="flex items-center gap-4 bg-brand-50 border border-brand-200 rounded-xl px-4 py-3"
+      class="flex items-center gap-4 bg-brand-50 dark:bg-brand-950/30 border border-brand-200 dark:border-brand-800 rounded-xl px-4 py-3"
     >
-      <div class="w-9 h-9 rounded-xl bg-brand-100 flex items-center justify-center flex-shrink-0" aria-hidden="true">
-        <svg class="w-5 h-5 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+      <div class="w-9 h-9 rounded-xl bg-brand-100 dark:bg-brand-900/50 flex items-center justify-center flex-shrink-0" aria-hidden="true">
+        <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
         </svg>
       </div>
       <div class="flex-1 min-w-0">
-        <p class="text-sm font-medium text-zinc-900 truncate">
-          You've been invited to <span class="text-brand-700">{{ inv.board_name }}</span>
+        <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
+          You've been invited to <span class="text-brand-700 dark:text-brand-400">{{ inv.board_name }}</span>
         </p>
-        <p class="text-xs text-zinc-500 mt-0.5">
+        <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
           {{ inv.access === 'write' ? 'Read & Write' : 'Read only' }} access
         </p>
       </div>
@@ -32,7 +32,7 @@
         <button
           @click="handleDecline(inv.board_id)"
           :disabled="responding === inv.board_id"
-          class="text-xs font-medium text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 px-3 py-1.5 rounded-lg transition-colors"
+          class="text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700/50 px-3 py-1.5 rounded-lg transition-colors"
         >
           Decline
         </button>

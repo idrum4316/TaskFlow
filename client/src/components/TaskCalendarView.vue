@@ -4,7 +4,7 @@
     <div class="flex items-center justify-between flex-shrink-0">
       <button
         @click="prevMonth"
-        class="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
+        class="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
         aria-label="Previous month"
       >
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
@@ -12,13 +12,13 @@
         </svg>
       </button>
 
-      <h3 class="font-semibold text-zinc-900 text-base tabular-nums">
-        {{ monthName }} <span class="text-zinc-400 font-normal">{{ year }}</span>
+      <h3 class="font-semibold text-zinc-900 dark:text-zinc-100 text-base tabular-nums">
+        {{ monthName }} <span class="text-zinc-400 dark:text-zinc-500 font-normal">{{ year }}</span>
       </h3>
 
       <button
         @click="nextMonth"
-        class="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
+        class="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
         aria-label="Next month"
       >
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
@@ -32,21 +32,21 @@
       <div
         v-for="day in WEEKDAYS"
         :key="day"
-        class="text-xs font-semibold text-zinc-400 text-center py-1 uppercase tracking-wide"
+        class="text-xs font-semibold text-zinc-400 dark:text-zinc-500 text-center py-1 uppercase tracking-wide"
       >
         {{ day }}
       </div>
     </div>
 
     <!-- Calendar grid -->
-    <div class="grid grid-cols-7 gap-px bg-zinc-200 rounded-2xl overflow-hidden border border-zinc-200 flex-1 min-h-0">
+    <div class="grid grid-cols-7 gap-px bg-zinc-200 dark:bg-zinc-700 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-700 flex-1 min-h-0">
       <div
         v-for="(cell, i) in calendarCells"
         :key="i"
         :class="[
           'flex flex-col overflow-hidden p-1.5',
-          cell.day ? 'bg-white' : 'bg-zinc-50/80',
-          cell.isToday ? 'bg-brand-50' : '',
+          cell.day ? 'bg-white dark:bg-zinc-800' : 'bg-zinc-50/80 dark:bg-zinc-800/50',
+          cell.isToday ? 'bg-brand-50 dark:bg-brand-950/30' : '',
         ]"
       >
         <template v-if="cell.day">
@@ -55,7 +55,7 @@
               'text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full mb-1 flex-shrink-0 tabular-nums',
               cell.isToday
                 ? 'bg-brand-600 text-white'
-                : 'text-zinc-500 hover:bg-zinc-100',
+                : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700',
             ]"
           >
             {{ cell.day }}
@@ -80,8 +80,8 @@
     </div>
 
     <!-- No-due-date tasks -->
-    <div v-if="undatedTasks.length" class="flex-shrink-0 pt-3 border-t border-zinc-200">
-      <h4 class="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">No due date</h4>
+    <div v-if="undatedTasks.length" class="flex-shrink-0 pt-3 border-t border-zinc-200 dark:border-zinc-700">
+      <h4 class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-2">No due date</h4>
       <div class="flex flex-wrap gap-2">
         <button
           v-for="task in undatedTasks"
@@ -160,13 +160,13 @@ const calendarCells = computed(() => {
 });
 
 const STATUS_CHIP = {
-  todo: 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200',
-  'in-progress': 'bg-brand-100 text-brand-800 hover:bg-brand-200',
-  done: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200',
+  todo: 'bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600',
+  'in-progress': 'bg-brand-100 dark:bg-brand-900/40 text-brand-800 dark:text-brand-300 hover:bg-brand-200 dark:hover:bg-brand-800/50',
+  done: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-800/50',
 };
 
 function taskChipClass(task) {
-  if (task.priority === 'high' && task.status !== 'done') return 'bg-rose-100 text-rose-800 hover:bg-rose-200';
+  if (task.priority === 'high' && task.status !== 'done') return 'bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-300 hover:bg-rose-200 dark:hover:bg-rose-800/50';
   return STATUS_CHIP[task.status] || STATUS_CHIP.todo;
 }
 </script>

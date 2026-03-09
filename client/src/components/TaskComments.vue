@@ -1,17 +1,17 @@
 <template>
-  <div class="pt-5 border-t border-zinc-100">
-    <h3 class="text-sm font-medium text-zinc-700 mb-3">
+  <div class="pt-5 border-t border-zinc-100 dark:border-zinc-700">
+    <h3 class="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">
       Comments
-      <span v-if="comments.length" class="text-xs font-normal text-zinc-400 ml-1">({{ comments.length }})</span>
+      <span v-if="comments.length" class="text-xs font-normal text-zinc-400 dark:text-zinc-500 ml-1">({{ comments.length }})</span>
     </h3>
 
     <!-- Loading skeleton -->
     <div v-if="loading" class="space-y-3 mb-4">
       <div v-for="i in 2" :key="i" class="flex gap-3">
-        <div class="w-7 h-7 rounded-full bg-zinc-100 animate-pulse flex-shrink-0" />
+        <div class="w-7 h-7 rounded-full bg-zinc-100 dark:bg-zinc-700 animate-pulse flex-shrink-0" />
         <div class="flex-1 space-y-1.5 pt-1">
-          <div class="h-2.5 w-24 bg-zinc-100 rounded animate-pulse" />
-          <div class="h-2.5 w-full bg-zinc-100 rounded animate-pulse" />
+          <div class="h-2.5 w-24 bg-zinc-100 dark:bg-zinc-700 rounded animate-pulse" />
+          <div class="h-2.5 w-full bg-zinc-100 dark:bg-zinc-700 rounded animate-pulse" />
         </div>
       </div>
     </div>
@@ -20,15 +20,15 @@
     <ul v-else-if="comments.length" class="space-y-4 mb-4">
       <li v-for="comment in comments" :key="comment._id" class="flex gap-3 group">
         <div
-          class="w-7 h-7 rounded-full bg-zinc-200 text-zinc-600 text-xs font-semibold flex items-center justify-center flex-shrink-0 select-none mt-0.5"
+          class="w-7 h-7 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 text-xs font-semibold flex items-center justify-center flex-shrink-0 select-none mt-0.5"
           aria-hidden="true"
         >
           {{ comment.username?.[0]?.toUpperCase() || '?' }}
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex items-baseline gap-2">
-            <span class="text-xs font-semibold text-zinc-800">{{ comment.username }}</span>
-            <span class="text-xs text-zinc-400">{{ formatRelative(comment.created_at) }}</span>
+            <span class="text-xs font-semibold text-zinc-800 dark:text-zinc-200">{{ comment.username }}</span>
+            <span class="text-xs text-zinc-400 dark:text-zinc-500">{{ formatRelative(comment.created_at) }}</span>
             <button
               v-if="canDelete(comment)"
               type="button"
@@ -39,12 +39,12 @@
               Delete
             </button>
           </div>
-          <p class="text-sm text-zinc-700 mt-0.5 break-words whitespace-pre-wrap">{{ comment.body }}</p>
+          <p class="text-sm text-zinc-700 dark:text-zinc-300 mt-0.5 break-words whitespace-pre-wrap">{{ comment.body }}</p>
         </div>
       </li>
     </ul>
 
-    <p v-else-if="!loading" class="text-xs text-zinc-400 mb-4">No comments yet. Be the first to comment.</p>
+    <p v-else-if="!loading" class="text-xs text-zinc-400 dark:text-zinc-500 mb-4">No comments yet. Be the first to comment.</p>
 
     <!-- New comment input -->
     <div class="flex gap-2.5">

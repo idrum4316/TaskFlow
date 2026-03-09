@@ -6,12 +6,12 @@
     aria-modal="true"
     :aria-labelledby="modalTitleId"
   >
-    <div class="bg-white rounded-2xl shadow-modal w-full max-w-sm animate-scale-in">
-      <div class="px-6 py-4 border-b border-zinc-200 flex items-center justify-between">
-        <h2 :id="modalTitleId" class="text-base font-semibold text-zinc-900">{{ title }}</h2>
+    <div class="bg-white dark:bg-zinc-800 rounded-2xl shadow-modal w-full max-w-sm animate-scale-in">
+      <div class="px-6 py-4 border-b border-zinc-200 dark:border-zinc-700 flex items-center justify-between">
+        <h2 :id="modalTitleId" class="text-base font-semibold text-zinc-900 dark:text-zinc-100">{{ title }}</h2>
         <button
           @click="$emit('close')"
-          class="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+          class="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
           aria-label="Close"
         >
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -22,7 +22,7 @@
 
       <form @submit.prevent="handleSubmit" class="px-6 py-5 space-y-4">
         <div>
-          <label class="block text-sm font-medium text-zinc-700 mb-1.5" for="board-name-input">
+          <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" for="board-name-input">
             Board name
           </label>
           <input

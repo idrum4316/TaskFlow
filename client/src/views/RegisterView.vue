@@ -27,22 +27,22 @@
     </div>
 
     <!-- Right panel: form -->
-    <div class="flex-1 flex items-center justify-center px-6 py-12 bg-zinc-50">
+    <div class="flex-1 flex items-center justify-center px-6 py-12 bg-zinc-50 dark:bg-zinc-900">
       <div class="w-full max-w-sm animate-slide-up">
         <!-- Mobile logo -->
         <div class="flex items-center gap-2 mb-10 lg:hidden">
           <AppLogo class="w-7 h-7 text-brand-600" />
-          <span class="text-lg font-bold tracking-tight text-zinc-900">TaskFlow</span>
+          <span class="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">TaskFlow</span>
         </div>
 
         <div class="mb-8">
-          <h1 class="text-2xl font-bold text-zinc-900">Create your account</h1>
-          <p class="mt-1 text-zinc-500 text-sm">Start organizing your work today</p>
+          <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Create your account</h1>
+          <p class="mt-1 text-zinc-500 dark:text-zinc-400 text-sm">Start organizing your work today</p>
         </div>
 
         <form @submit.prevent="handleSubmit" class="space-y-4" novalidate>
           <div>
-            <label class="block text-sm font-medium text-zinc-700 mb-1.5" for="username">
+            <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" for="username">
               Username
             </label>
             <input
@@ -58,7 +58,7 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-zinc-700 mb-1.5" for="email">
+            <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" for="email">
               Email address
             </label>
             <input
@@ -73,7 +73,7 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-zinc-700 mb-1.5" for="password">
+            <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" for="password">
               Password
             </label>
             <input
@@ -110,7 +110,7 @@
           </button>
         </form>
 
-        <p class="mt-6 text-center text-sm text-zinc-500">
+        <p class="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
           Already have an account?
           <RouterLink to="/login" class="text-brand-600 hover:text-brand-700 font-semibold underline-offset-2 hover:underline">
             Sign in

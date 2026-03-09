@@ -1,11 +1,11 @@
 <template>
   <div class="flex flex-col h-[calc(100vh-3.5rem)]">
     <!-- Board sub-header -->
-    <div class="flex items-center gap-2 px-6 py-3 bg-white border-b border-zinc-200 flex-shrink-0">
+    <div class="flex items-center gap-2 px-6 py-3 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-700 flex-shrink-0">
       <!-- Breadcrumb -->
       <RouterLink
         to="/"
-        class="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-700 transition-colors font-medium"
+        class="flex items-center gap-1.5 text-sm text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors font-medium"
       >
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -15,13 +15,13 @@
       <svg class="w-4 h-4 text-zinc-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
       </svg>
-      <h2 class="font-semibold text-zinc-900 text-sm truncate max-w-[160px]">
+      <h2 class="font-semibold text-zinc-900 dark:text-zinc-100 text-sm truncate max-w-[160px]">
         {{ board?.name || '…' }}
       </h2>
 
       <!-- View switcher -->
       <div
-        class="flex items-center bg-zinc-100 rounded-lg p-1 ml-4"
+        class="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1 ml-4"
         role="tablist"
         aria-label="Board view"
       >
@@ -35,8 +35,8 @@
           :class="[
             'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150',
             activeView === v.id
-              ? 'bg-white text-zinc-900 shadow-card'
-              : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-200/50',
+              ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-card'
+              : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50',
           ]"
         >
           <component :is="v.icon" class="w-4 h-4 flex-shrink-0" aria-hidden="true" />
@@ -48,7 +48,7 @@
       <button
         v-if="isOwner"
         @click="showShareModal = true"
-        class="ml-2 flex items-center gap-1.5 text-sm font-medium text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 px-3 py-1.5 rounded-lg transition-colors"
+        class="ml-2 flex items-center gap-1.5 text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-colors"
       >
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
@@ -71,7 +71,7 @@
     <div
       v-if="tasksStore.error"
       role="alert"
-      class="flex items-center gap-2 text-sm text-red-700 bg-red-50 border-b border-red-200 px-6 py-3 flex-shrink-0"
+      class="flex items-center gap-2 text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border-b border-red-200 dark:border-red-800 px-6 py-3 flex-shrink-0"
     >
       <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
