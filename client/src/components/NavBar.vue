@@ -28,6 +28,15 @@
           </span>
         </div>
 
+        <!-- Admin link -->
+        <RouterLink
+          v-if="authStore.isAdmin"
+          to="/admin"
+          class="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 font-medium transition-colors px-2 py-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        >
+          Admin
+        </RouterLink>
+
         <div class="w-px h-4 bg-zinc-200 dark:bg-zinc-700" aria-hidden="true" />
 
         <!-- Theme toggle -->

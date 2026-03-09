@@ -3,6 +3,7 @@ const { getMigrationsDb, getUsersDb, getTasksDb, getBoardsDb } = require('../con
 // Register migrations in order here
 const migrations = [
   require('./001_add_boards'),
+  require('./002_add_admin_field'),
 ];
 
 async function runMigrations() {

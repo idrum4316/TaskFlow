@@ -8,6 +8,7 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref(JSON.parse(localStorage.getItem('user') || 'null'));
 
   const isAuthenticated = computed(() => !!token.value);
+  const isAdmin = computed(() => !!user.value?.is_admin);
 
   function setSession(data) {
     token.value = data.token;
@@ -36,5 +37,5 @@ export const useAuthStore = defineStore('auth', () => {
     router.push({ name: 'login' });
   }
 
-  return { token, user, isAuthenticated, register, login, logout };
+  return { token, user, isAuthenticated, isAdmin, register, login, logout };
 });

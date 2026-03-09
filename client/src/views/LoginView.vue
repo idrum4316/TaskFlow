@@ -94,7 +94,7 @@
           </button>
         </form>
 
-        <p class="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
+        <p v-if="registrationEnabled" class="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
           Don't have an account?
           <RouterLink to="/register" class="text-brand-600 hover:text-brand-700 font-semibold underline-offset-2 hover:underline">
             Create one free
@@ -106,9 +106,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import api from '@/api/client';
 import AppLogo from '@/components/AppLogo.vue';
 
 const authStore = useAuthStore();
@@ -116,7 +117,17 @@ const email = ref('');
 const password = ref('');
 const errorMsg = ref('');
 const loading = ref(false);
+const registrationEnabled = ref(true);
 const year = computed(() => new Date().getFullYear());
+
+onMounted(async () => {
+  try {
+    const { data } = await api.get('/auth/registration-status');
+    registrationEnabled.value = data.registration_enabled;
+  } catch {
+    registrationEnabled.value = true;
+  }
+});
 
 async function handleSubmit() {
   errorMsg.value = '';

@@ -40,6 +40,20 @@
           <p class="mt-1 text-zinc-500 dark:text-zinc-400 text-sm">Start organizing your work today</p>
         </div>
 
+        <!-- Registration disabled message -->
+        <div v-if="!checkingStatus && !registrationEnabled" class="space-y-4">
+          <div class="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2.5 rounded-lg dark:text-amber-300 dark:bg-amber-950/30 dark:border-amber-800">
+            Registration is currently disabled. Please contact an administrator.
+          </div>
+          <p class="text-center text-sm text-zinc-500 dark:text-zinc-400">
+            Already have an account?
+            <RouterLink to="/login" class="text-brand-600 hover:text-brand-700 font-semibold underline-offset-2 hover:underline">
+              Sign in
+            </RouterLink>
+          </p>
+        </div>
+
+        <template v-else-if="!checkingStatus">
         <form @submit.prevent="handleSubmit" class="space-y-4" novalidate>
           <div>
             <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" for="username">
@@ -116,15 +130,17 @@
             Sign in
           </RouterLink>
         </p>
+        </template>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import api from '@/api/client';
 import AppLogo from '@/components/AppLogo.vue';
 
 const authStore = useAuthStore();
@@ -133,7 +149,21 @@ const email = ref('');
 const password = ref('');
 const errorMsg = ref('');
 const loading = ref(false);
+const registrationEnabled = ref(true);
+const checkingStatus = ref(true);
 const year = computed(() => new Date().getFullYear());
+
+onMounted(async () => {
+  try {
+    const { data } = await api.get('/auth/registration-status');
+    registrationEnabled.value = data.registration_enabled;
+  } catch {
+    // Default to enabled if check fails
+    registrationEnabled.value = true;
+  } finally {
+    checkingStatus.value = false;
+  }
+});
 
 async function handleSubmit() {
   errorMsg.value = '';

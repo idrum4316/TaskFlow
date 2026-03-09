@@ -14,6 +14,7 @@ let usersDb;
 let tasksDb;
 let boardsDb;
 let migrationsDb;
+let settingsDb;
 
 const TASK_DESIGN_DOC = {
   _id: '_design/tasks',
@@ -112,13 +113,32 @@ async function ensureDesignDoc(db, doc) {
   }
 }
 
+async function ensureDefaultSettings() {
+  const defaults = {
+    registration_enabled: true,
+  };
+  for (const [key, value] of Object.entries(defaults)) {
+    try {
+      await settingsDb.get(key);
+    } catch (err) {
+      if (err.statusCode === 404) {
+        await settingsDb.insert({ _id: key, value });
+      } else {
+        throw err;
+      }
+    }
+  }
+}
+
 async function initDb() {
   usersDb = await ensureDb('todo_users');
   tasksDb = await ensureDb('todo_tasks');
   boardsDb = await ensureDb('todo_boards');
   migrationsDb = await ensureDb('todo_migrations');
+  settingsDb = await ensureDb('todo_settings');
   await ensureDesignDoc(tasksDb, TASK_DESIGN_DOC);
   await ensureDesignDoc(boardsDb, BOARD_DESIGN_DOC);
+  await ensureDefaultSettings();
   console.log('Database initialised');
 }
 
@@ -126,5 +146,29 @@ const getUsersDb = () => usersDb;
 const getTasksDb = () => tasksDb;
 const getBoardsDb = () => boardsDb;
 const getMigrationsDb = () => migrationsDb;
+const getSettingsDb = () => settingsDb;
 
-module.exports = { initDb, getUsersDb, getTasksDb, getBoardsDb, getMigrationsDb };
+async function getSetting(key) {
+  try {
+    const doc = await settingsDb.get(key);
+    return doc.value;
+  } catch (err) {
+    if (err.statusCode === 404) return undefined;
+    throw err;
+  }
+}
+
+async function setSetting(key, value) {
+  try {
+    const doc = await settingsDb.get(key);
+    await settingsDb.insert({ ...doc, value });
+  } catch (err) {
+    if (err.statusCode === 404) {
+      await settingsDb.insert({ _id: key, value });
+    } else {
+      throw err;
+    }
+  }
+}
+
+module.exports = { initDb, getUsersDb, getTasksDb, getBoardsDb, getMigrationsDb, getSettingsDb, getSetting, setSetting };
