@@ -40,6 +40,67 @@
           <p class="mt-1 text-zinc-500 dark:text-zinc-400 text-sm">Sign in to your account to continue</p>
         </div>
 
+        <!-- MFA Challenge Step -->
+        <template v-if="authStore.mfaChallenge">
+          <div class="space-y-4">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="w-9 h-9 rounded-lg bg-brand-100 dark:bg-brand-900/40 flex items-center justify-center">
+                <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+                </svg>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Two-factor authentication</p>
+                <p class="text-xs text-zinc-500 dark:text-zinc-400">Enter the code from your authenticator app</p>
+              </div>
+            </div>
+
+            <form @submit.prevent="handleMfaSubmit" class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" for="mfa-code">
+                  Authentication code
+                </label>
+                <input
+                  id="mfa-code"
+                  v-model="mfaCode"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="6"
+                  required
+                  class="input text-center tracking-widest font-mono text-lg"
+                  placeholder="000000"
+                  autofocus
+                />
+              </div>
+
+              <div
+                v-if="mfaError"
+                role="alert"
+                class="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2.5 rounded-lg dark:text-red-400 dark:bg-red-950/30 dark:border-red-800"
+              >
+                {{ mfaError }}
+              </div>
+
+              <button type="submit" :disabled="mfaLoading" class="btn-primary w-full">
+                <svg v-if="mfaLoading" class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                {{ mfaLoading ? 'Verifying…' : 'Verify' }}
+              </button>
+            </form>
+
+            <button
+              @click="authStore.cancelMfa(); mfaCode = ''; mfaError = '';"
+              class="w-full text-center text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 font-medium transition-colors"
+            >
+              Back to sign in
+            </button>
+          </div>
+        </template>
+
+        <!-- Normal Login Form -->
+        <template v-else>
         <form @submit.prevent="handleSubmit" class="space-y-4" novalidate>
           <div>
             <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" for="email">
@@ -100,6 +161,7 @@
             Create one free
           </RouterLink>
         </p>
+        </template>
       </div>
     </div>
   </div>
@@ -120,6 +182,11 @@ const loading = ref(false);
 const registrationEnabled = ref(true);
 const year = computed(() => new Date().getFullYear());
 
+// MFA
+const mfaCode = ref('');
+const mfaError = ref('');
+const mfaLoading = ref(false);
+
 onMounted(async () => {
   try {
     const { data } = await api.get('/auth/registration-status');
@@ -133,11 +200,27 @@ async function handleSubmit() {
   errorMsg.value = '';
   loading.value = true;
   try {
-    await authStore.login(email.value, password.value);
+    const result = await authStore.login(email.value, password.value);
+    // If MFA is required, the store already set mfaChallenge — template will switch
+    if (result?.mfa_required) {
+      // Stay on page, MFA form will appear
+    }
   } catch (err) {
     errorMsg.value = err.response?.data?.error || 'Login failed. Please try again.';
   } finally {
     loading.value = false;
+  }
+}
+
+async function handleMfaSubmit() {
+  mfaError.value = '';
+  mfaLoading.value = true;
+  try {
+    await authStore.verifyMfa(mfaCode.value);
+  } catch (err) {
+    mfaError.value = err.response?.data?.error || 'Invalid code. Please try again.';
+  } finally {
+    mfaLoading.value = false;
   }
 }
 </script>

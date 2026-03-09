@@ -11,6 +11,7 @@ const invitationRoutes = require('./routes/invitations');
 const userRoutes = require('./routes/users');
 const commentRoutes = require('./routes/comments');
 const adminRoutes = require('./routes/admin');
+const accountRoutes = require('./routes/account');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,6 +27,7 @@ app.use('/api/invitations', invitationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/tasks/:id/comments', commentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/account', accountRoutes);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 

@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { TOTP, Secret } = require('otpauth');
 const { getUsersDb, getSetting } = require('../config/couch');
 
 const router = express.Router();
@@ -10,6 +11,10 @@ function signToken(payload) {
   return jwt.sign(payload, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   });
+}
+
+function signMfaToken(payload) {
+  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '5m' });
 }
 
 // POST /api/auth/register
@@ -109,6 +114,64 @@ router.post('/login', async (req, res) => {
   const match = await bcrypt.compare(password, user.password_hash);
   if (!match) {
     return res.status(401).json({ error: 'Invalid credentials' });
+  }
+
+  // If MFA is enabled, return a short-lived MFA challenge token
+  if (user.mfa_enabled && user.mfa_secret) {
+    const mfa_token = signMfaToken({ sub: user._id, mfa: true });
+    return res.json({ mfa_required: true, mfa_token });
+  }
+
+  const is_admin = !!user.is_admin;
+  const token = signToken({ sub: user._id, username: user.username, email: user.email, is_admin });
+  res.json({ token, user: { id: user._id, username: user.username, email: user.email, is_admin } });
+});
+
+// POST /api/auth/mfa-verify — complete login with TOTP code
+router.post('/mfa-verify', async (req, res) => {
+  const { mfa_token, code } = req.body;
+
+  if (!mfa_token || !code) {
+    return res.status(400).json({ error: 'mfa_token and code are required' });
+  }
+
+  let payload;
+  try {
+    payload = jwt.verify(mfa_token, process.env.JWT_SECRET);
+  } catch {
+    return res.status(401).json({ error: 'MFA session expired. Please log in again.' });
+  }
+
+  if (!payload.mfa) {
+    return res.status(400).json({ error: 'Invalid MFA token' });
+  }
+
+  const db = getUsersDb();
+
+  let user;
+  try {
+    user = await db.get(payload.sub);
+  } catch {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  if (!user.mfa_enabled || !user.mfa_secret) {
+    return res.status(400).json({ error: 'MFA is not enabled for this account' });
+  }
+
+  const secret = Secret.fromBase32(user.mfa_secret);
+  const totp = new TOTP({
+    issuer: 'TaskFlow',
+    label: user.email,
+    algorithm: 'SHA1',
+    digits: 6,
+    period: 30,
+    secret,
+  });
+
+  const delta = totp.validate({ token: code, window: 1 });
+  if (delta === null) {
+    return res.status(400).json({ error: 'Invalid code. Please try again.' });
   }
 
   const is_admin = !!user.is_admin;
