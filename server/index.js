@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const { initDb } = require('./config/couch');
 const { runMigrations } = require('./migrations/runner');
@@ -30,6 +31,13 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/account', accountRoutes);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
+
+// Serve static client build in production
+const publicDir = path.join(__dirname, 'public');
+app.use(express.static(publicDir));
+app.get(/^\/(?!api).*/, (_req, res) => {
+  res.sendFile(path.join(publicDir, 'index.html'));
+});
 
 async function start() {
   await initDb();
