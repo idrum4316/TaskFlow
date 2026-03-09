@@ -44,8 +44,20 @@
         </button>
       </div>
 
+      <!-- Share button (owner only) -->
+      <button
+        v-if="isOwner"
+        @click="showShareModal = true"
+        class="ml-2 flex items-center gap-1.5 text-sm font-medium text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 px-3 py-1.5 rounded-lg transition-colors"
+      >
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+        </svg>
+        <span class="hidden sm:inline">Share</span>
+      </button>
+
       <div class="ml-auto flex-shrink-0">
-        <button @click="openCreate" class="btn-primary">
+        <button v-if="canEdit" @click="openCreate" class="btn-primary">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
@@ -102,29 +114,48 @@
       :task="editingTask"
       :board-id="boardId"
       :default-status="defaultStatus"
+      :read-only="!canEdit"
       @save="handleSave"
       @close="closeForm"
+    />
+
+    <!-- Share board modal -->
+    <ShareBoardModal
+      v-if="showShareModal && board"
+      :board-id="board._id"
+      :board-name="board.name"
+      @close="showShareModal = false"
     />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, h } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, h, provide } from 'vue';
 import { useRoute, useRouter, RouterLink } from 'vue-router';
 import { useBoardsStore } from '@/stores/boards';
 import { useTasksStore } from '@/stores/tasks';
+import { useSharesStore } from '@/stores/shares';
 import KanbanBoard from '@/components/KanbanBoard.vue';
 import TaskListView from '@/components/TaskListView.vue';
 import TaskCalendarView from '@/components/TaskCalendarView.vue';
 import TaskForm from '@/components/TaskForm.vue';
+import ShareBoardModal from '@/components/ShareBoardModal.vue';
 
 const route = useRoute();
 const router = useRouter();
 const boardsStore = useBoardsStore();
 const tasksStore = useTasksStore();
+const sharesStore = useSharesStore();
 
 const boardId = computed(() => route.params.id);
 const board = computed(() => boardsStore.boards.find((b) => b._id === boardId.value));
+
+const isOwner = computed(() => board.value?._role === 'owner');
+const canEdit = computed(() => isOwner.value || board.value?._access === 'write');
+
+provide('canEdit', canEdit);
+
+const showShareModal = ref(false);
 
 const activeView = computed(() => {
   const v = route.query.view;
@@ -172,7 +203,10 @@ async function load() {
 }
 
 onMounted(load);
-onUnmounted(() => tasksStore.clearTasks());
+onUnmounted(() => {
+  tasksStore.clearTasks();
+  sharesStore.clearShares();
+});
 watch(boardId, load);
 
 function openCreate() {

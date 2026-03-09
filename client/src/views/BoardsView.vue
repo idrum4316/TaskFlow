@@ -5,7 +5,7 @@
       <div>
         <h2 class="text-2xl font-bold text-zinc-900">My Boards</h2>
         <p class="mt-1 text-sm text-zinc-500">
-          {{ boardsStore.boards.length }} board{{ boardsStore.boards.length !== 1 ? 's' : '' }}
+          {{ ownedBoards.length }} board{{ ownedBoards.length !== 1 ? 's' : '' }}
         </p>
       </div>
       <button @click="showCreate = true" class="btn-primary">
@@ -15,6 +15,9 @@
         New Board
       </button>
     </div>
+
+    <!-- Invitations banner -->
+    <InvitationsBanner />
 
     <!-- Loading skeleton -->
     <div v-if="boardsStore.loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" aria-busy="true" aria-label="Loading boards">
@@ -33,66 +36,91 @@
       {{ boardsStore.error }}
     </div>
 
-    <!-- Empty state -->
-    <div v-else-if="boardsStore.boards.length === 0" class="flex flex-col items-center justify-center py-24 text-center">
-      <div class="w-16 h-16 rounded-2xl bg-brand-100 flex items-center justify-center mb-4" aria-hidden="true">
-        <svg class="w-8 h-8 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zm0 9.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 018.25 20.25H6A2.25 2.25 0 013.75 18v-2.25zm9.75-9.75A2.25 2.25 0 0115.75 3.75H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zm0 9.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-        </svg>
-      </div>
-      <h3 class="text-base font-semibold text-zinc-900">No boards yet</h3>
-      <p class="mt-1.5 text-sm text-zinc-500 max-w-xs">
-        Create your first board to start organizing tasks with kanban, list, or calendar views.
-      </p>
-      <button @click="showCreate = true" class="btn-primary mt-6">
-        Create your first board
-      </button>
-    </div>
-
-    <!-- Board grid -->
-    <ul v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" role="list">
-      <li
-        v-for="(board, index) in boardsStore.boards"
-        :key="board._id"
-        class="group relative bg-white rounded-2xl shadow-card hover:shadow-card-hover border border-zinc-200/80 hover:border-zinc-300 transition-all duration-200 overflow-hidden flex flex-col animate-slide-up"
-      >
-        <!-- Color band -->
-        <div :class="['h-2 w-full flex-shrink-0', bandColor(index)]" aria-hidden="true" />
-
-        <RouterLink
-          :to="{ name: 'board', params: { id: board._id } }"
-          class="flex-1 p-5 block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-inset"
-          :aria-label="`Open board: ${board.name}`"
-        >
-          <div
-            :class="['w-10 h-10 rounded-xl flex items-center justify-center mb-4 text-white font-bold text-lg select-none', avatarBg(index)]"
-            aria-hidden="true"
-          >
-            {{ board.name[0].toUpperCase() }}
-          </div>
-          <h3 class="font-semibold text-zinc-900 group-hover:text-brand-700 transition-colors leading-snug">
-            {{ board.name }}
-          </h3>
-          <p class="text-xs text-zinc-400 mt-1">Created {{ formatDate(board.created_at) }}</p>
-        </RouterLink>
-
-        <div class="px-5 pb-4 flex items-center gap-1 border-t border-zinc-100 pt-3">
-          <button
-            @click.stop="startRename(board)"
-            class="text-xs text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 px-2.5 py-1 rounded-md transition-colors font-medium"
-          >
-            Rename
-          </button>
-          <div class="flex-1" />
-          <button
-            @click.stop="handleDelete(board)"
-            class="text-xs text-zinc-400 hover:text-red-600 hover:bg-red-50 px-2.5 py-1 rounded-md transition-colors font-medium"
-          >
-            Delete
-          </button>
+    <template v-else>
+      <!-- Empty state (no owned boards) -->
+      <div v-if="ownedBoards.length === 0 && sharedBoards.length === 0" class="flex flex-col items-center justify-center py-24 text-center">
+        <div class="w-16 h-16 rounded-2xl bg-brand-100 flex items-center justify-center mb-4" aria-hidden="true">
+          <svg class="w-8 h-8 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zm0 9.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 018.25 20.25H6A2.25 2.25 0 013.75 18v-2.25zm9.75-9.75A2.25 2.25 0 0115.75 3.75H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zm0 9.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+          </svg>
         </div>
-      </li>
-    </ul>
+        <h3 class="text-base font-semibold text-zinc-900">No boards yet</h3>
+        <p class="mt-1.5 text-sm text-zinc-500 max-w-xs">
+          Create your first board to start organizing tasks with kanban, list, or calendar views.
+        </p>
+        <button @click="showCreate = true" class="btn-primary mt-6">
+          Create your first board
+        </button>
+      </div>
+
+      <template v-else>
+        <!-- My Boards -->
+        <section v-if="ownedBoards.length > 0">
+          <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" role="list">
+            <li
+              v-for="(board, index) in ownedBoards"
+              :key="board._id"
+              class="group relative bg-white rounded-2xl shadow-card hover:shadow-card-hover border border-zinc-200/80 hover:border-zinc-300 transition-all duration-200 overflow-hidden flex flex-col animate-slide-up"
+            >
+              <div :class="['h-2 w-full flex-shrink-0', bandColor(index)]" aria-hidden="true" />
+              <RouterLink
+                :to="{ name: 'board', params: { id: board._id } }"
+                class="flex-1 p-5 block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-inset"
+                :aria-label="`Open board: ${board.name}`"
+              >
+                <div :class="['w-10 h-10 rounded-xl flex items-center justify-center mb-4 text-white font-bold text-lg select-none', avatarBg(index)]" aria-hidden="true">
+                  {{ board.name[0].toUpperCase() }}
+                </div>
+                <h3 class="font-semibold text-zinc-900 group-hover:text-brand-700 transition-colors leading-snug">{{ board.name }}</h3>
+                <p class="text-xs text-zinc-400 mt-1">Created {{ formatDate(board.created_at) }}</p>
+              </RouterLink>
+              <div class="px-5 pb-4 flex items-center gap-1 border-t border-zinc-100 pt-3">
+                <button @click.stop="startRename(board)" class="text-xs text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 px-2.5 py-1 rounded-md transition-colors font-medium">
+                  Rename
+                </button>
+                <button @click.stop="startShare(board)" class="text-xs text-zinc-400 hover:text-brand-600 hover:bg-brand-50 px-2.5 py-1 rounded-md transition-colors font-medium">
+                  Share
+                </button>
+                <div class="flex-1" />
+                <button @click.stop="handleDelete(board)" class="text-xs text-zinc-400 hover:text-red-600 hover:bg-red-50 px-2.5 py-1 rounded-md transition-colors font-medium">
+                  Delete
+                </button>
+              </div>
+            </li>
+          </ul>
+        </section>
+
+        <!-- Shared with me -->
+        <section v-if="sharedBoards.length > 0" :class="ownedBoards.length > 0 ? 'mt-10' : ''">
+          <h3 class="text-sm font-semibold text-zinc-500 mb-4">Shared with me</h3>
+          <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" role="list">
+            <li
+              v-for="(board, index) in sharedBoards"
+              :key="board._id"
+              class="group relative bg-white rounded-2xl shadow-card hover:shadow-card-hover border border-zinc-200/80 hover:border-zinc-300 transition-all duration-200 overflow-hidden flex flex-col animate-slide-up"
+            >
+              <div class="h-2 w-full flex-shrink-0 bg-gradient-to-r from-zinc-300 to-zinc-400" aria-hidden="true" />
+              <RouterLink
+                :to="{ name: 'board', params: { id: board._id } }"
+                class="flex-1 p-5 block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-inset"
+                :aria-label="`Open shared board: ${board.name}`"
+              >
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center mb-4 bg-zinc-100 text-zinc-500 font-bold text-lg select-none" aria-hidden="true">
+                  {{ board.name[0].toUpperCase() }}
+                </div>
+                <h3 class="font-semibold text-zinc-900 group-hover:text-brand-700 transition-colors leading-snug">{{ board.name }}</h3>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="text-xs text-zinc-400">Shared board</span>
+                  <span :class="['text-xs font-medium px-1.5 py-0.5 rounded-full', board._access === 'write' ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100 text-zinc-500']">
+                    {{ board._access === 'write' ? 'Read & Write' : 'Read only' }}
+                  </span>
+                </div>
+              </RouterLink>
+            </li>
+          </ul>
+        </section>
+      </template>
+    </template>
 
     <!-- Modals -->
     <BoardNameModal
@@ -110,20 +138,37 @@
       @confirm="handleRename"
       @close="renamingBoard = null"
     />
+    <ShareBoardModal
+      v-if="sharingBoard"
+      :board-id="sharingBoard._id"
+      :board-name="sharingBoard.name"
+      @close="sharingBoard = null"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useBoardsStore } from '@/stores/boards';
+import { useInvitationsStore } from '@/stores/invitations';
 import BoardNameModal from '@/components/BoardNameModal.vue';
+import ShareBoardModal from '@/components/ShareBoardModal.vue';
+import InvitationsBanner from '@/components/InvitationsBanner.vue';
 
 const boardsStore = useBoardsStore();
+const invitationsStore = useInvitationsStore();
 const showCreate = ref(false);
 const renamingBoard = ref(null);
+const sharingBoard = ref(null);
 
-onMounted(() => boardsStore.fetchBoards());
+onMounted(() => {
+  boardsStore.fetchBoards();
+  invitationsStore.fetchInvitations();
+});
+
+const ownedBoards = computed(() => boardsStore.boards.filter((b) => b._role === 'owner'));
+const sharedBoards = computed(() => boardsStore.boards.filter((b) => b._role === 'shared'));
 
 const BANDS = [
   'bg-gradient-to-r from-violet-500 to-brand-500',
@@ -150,6 +195,7 @@ function formatDate(iso) {
 }
 
 function startRename(board) { renamingBoard.value = board; }
+function startShare(board) { sharingBoard.value = board; }
 
 async function handleCreate(name) {
   await boardsStore.createBoard(name);

@@ -18,8 +18,8 @@
       <!-- Drawer header -->
       <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-200 flex-shrink-0">
         <div>
-          <h2 class="text-base font-semibold text-zinc-900">{{ task ? 'Edit Task' : 'New Task' }}</h2>
-          <p class="text-xs text-zinc-400 mt-0.5">{{ task ? 'Update the details below' : 'Fill in the details below' }}</p>
+          <h2 class="text-base font-semibold text-zinc-900">{{ task ? (readOnly ? 'View Task' : 'Edit Task') : 'New Task' }}</h2>
+          <p class="text-xs text-zinc-400 mt-0.5">{{ task ? (readOnly ? 'You have read-only access' : 'Update the details below') : 'Fill in the details below' }}</p>
         </div>
         <button
           @click="$emit('close')"
@@ -45,7 +45,8 @@
             type="text"
             required
             autofocus
-            class="input"
+            :disabled="readOnly"
+            class="input disabled:bg-zinc-50 disabled:text-zinc-500 disabled:cursor-default"
             placeholder="What needs to be done?"
           />
         </div>
@@ -59,7 +60,8 @@
             id="task-desc"
             v-model="form.description"
             rows="3"
-            class="input resize-none"
+            :disabled="readOnly"
+            class="input resize-none disabled:bg-zinc-50 disabled:text-zinc-500 disabled:cursor-default"
             placeholder="Add more context or details…"
           />
         </div>
@@ -69,7 +71,7 @@
           <div>
             <label class="block text-sm font-medium text-zinc-700 mb-1.5" for="task-status">Status</label>
             <div class="relative">
-              <select id="task-status" v-model="form.status" class="input pr-8 appearance-none">
+              <select id="task-status" v-model="form.status" :disabled="readOnly" class="input pr-8 appearance-none disabled:bg-zinc-50 disabled:text-zinc-500 disabled:cursor-default">
                 <option value="todo">To Do</option>
                 <option value="in-progress">In Progress</option>
                 <option value="done">Done</option>
@@ -83,7 +85,7 @@
           <div>
             <label class="block text-sm font-medium text-zinc-700 mb-1.5" for="task-priority">Priority</label>
             <div class="relative">
-              <select id="task-priority" v-model="form.priority" class="input pr-8 appearance-none">
+              <select id="task-priority" v-model="form.priority" :disabled="readOnly" class="input pr-8 appearance-none disabled:bg-zinc-50 disabled:text-zinc-500 disabled:cursor-default">
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
@@ -111,9 +113,13 @@
             id="task-due"
             v-model="form.due_date"
             type="date"
-            class="input"
+            :disabled="readOnly"
+            class="input disabled:bg-zinc-50 disabled:text-zinc-500 disabled:cursor-default"
           />
         </div>
+
+        <!-- Comments (edit mode only) -->
+        <TaskComments v-if="task" :task-id="task._id" :board-id="boardId" />
 
         <!-- Error -->
         <div
@@ -130,21 +136,28 @@
 
       <!-- Footer actions -->
       <div class="px-6 py-4 border-t border-zinc-200 flex items-center gap-3 flex-shrink-0 bg-zinc-50">
-        <button type="button" @click="$emit('close')" class="btn-secondary">
-          Cancel
-        </button>
-        <button
-          type="submit"
-          :disabled="saving"
-          class="btn-primary flex-1"
-          @click="handleSubmit"
-        >
-          <svg v-if="saving" class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-          {{ saving ? 'Saving…' : task ? 'Save changes' : 'Create task' }}
-        </button>
+        <template v-if="readOnly">
+          <button type="button" @click="$emit('close')" class="btn-primary flex-1">
+            Close
+          </button>
+        </template>
+        <template v-else>
+          <button type="button" @click="$emit('close')" class="btn-secondary">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            :disabled="saving"
+            class="btn-primary flex-1"
+            @click="handleSubmit"
+          >
+            <svg v-if="saving" class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            {{ saving ? 'Saving…' : task ? 'Save changes' : 'Create task' }}
+          </button>
+        </template>
       </div>
     </div>
   </div>
@@ -152,11 +165,13 @@
 
 <script setup>
 import { ref, reactive, computed } from 'vue';
+import TaskComments from './TaskComments.vue';
 
 const props = defineProps({
   task: { type: Object, default: null },
   boardId: { type: String, default: null },
   defaultStatus: { type: String, default: 'todo' },
+  readOnly: { type: Boolean, default: false },
 });
 const emit = defineEmits(['save', 'close']);
 

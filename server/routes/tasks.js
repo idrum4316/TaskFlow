@@ -21,23 +21,27 @@ function validateTask(body, requireBoardId = false) {
   return errors;
 }
 
-async function assertBoardOwnership(boardId, userId) {
+async function assertBoardAccess(boardId, userId, requiredAccess = 'read') {
   const board = await getBoardsDb().get(boardId);
-  if (board.user_id !== userId) throw Object.assign(new Error('Forbidden'), { status: 403 });
+  if (board.user_id === userId) return board; // owner has full access
+
+  const share = (board.shares || []).find(
+    (s) => s.user_id === userId && s.status === 'accepted'
+  );
+  if (!share) throw Object.assign(new Error('Forbidden'), { status: 403 });
+  if (requiredAccess === 'write' && share.access !== 'write') {
+    throw Object.assign(new Error('Forbidden'), { status: 403 });
+  }
   return board;
 }
 
 // GET /api/tasks?board_id=xxx[&status=todo]
 router.get('/', async (req, res) => {
   const { board_id, status } = req.query;
+  if (!board_id) return res.status(400).json({ error: 'board_id query parameter is required' });
 
-  if (!board_id) {
-    return res.status(400).json({ error: 'board_id query parameter is required' });
-  }
-
-  // Verify the board belongs to this user
   try {
-    await assertBoardOwnership(board_id, req.user.sub);
+    await assertBoardAccess(board_id, req.user.sub, 'read');
   } catch (err) {
     if (err.status === 403) return res.status(403).json({ error: 'Forbidden' });
     if (err.statusCode === 404) return res.status(404).json({ error: 'Board not found' });
@@ -72,9 +76,8 @@ router.post('/', async (req, res) => {
   const errors = validateTask(req.body, true);
   if (errors.length) return res.status(400).json({ errors });
 
-  // Verify board ownership
   try {
-    await assertBoardOwnership(req.body.board_id, req.user.sub);
+    await assertBoardAccess(req.body.board_id, req.user.sub, 'write');
   } catch (err) {
     if (err.status === 403) return res.status(403).json({ error: 'Forbidden' });
     if (err.statusCode === 404) return res.status(404).json({ error: 'Board not found' });
@@ -105,14 +108,20 @@ router.post('/', async (req, res) => {
 
 // GET /api/tasks/:id
 router.get('/:id', async (req, res) => {
+  let doc;
   try {
-    const doc = await getTasksDb().get(req.params.id);
-    if (doc.user_id !== req.user.sub) return res.status(403).json({ error: 'Forbidden' });
-    res.json(doc);
+    doc = await getTasksDb().get(req.params.id);
   } catch (err) {
     if (err.statusCode === 404) return res.status(404).json({ error: 'Task not found' });
-    res.status(500).json({ error: 'Failed to fetch task' });
+    return res.status(500).json({ error: 'Failed to fetch task' });
   }
+  try {
+    await assertBoardAccess(doc.board_id, req.user.sub, 'read');
+  } catch (err) {
+    if (err.status === 403) return res.status(403).json({ error: 'Forbidden' });
+    return res.status(500).json({ error: 'Failed to verify board' });
+  }
+  res.json(doc);
 });
 
 // PUT /api/tasks/:id
@@ -121,7 +130,6 @@ router.put('/:id', async (req, res) => {
   if (errors.length) return res.status(400).json({ errors });
 
   const db = getTasksDb();
-
   let existing;
   try {
     existing = await db.get(req.params.id);
@@ -130,13 +138,17 @@ router.put('/:id', async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch task' });
   }
 
-  if (existing.user_id !== req.user.sub) return res.status(403).json({ error: 'Forbidden' });
+  try {
+    await assertBoardAccess(existing.board_id, req.user.sub, 'write');
+  } catch (err) {
+    if (err.status === 403) return res.status(403).json({ error: 'Forbidden' });
+    return res.status(500).json({ error: 'Failed to verify board' });
+  }
 
-  // If moving to a different board, verify ownership of target board
   const newBoardId = req.body.board_id ?? existing.board_id;
   if (newBoardId !== existing.board_id) {
     try {
-      await assertBoardOwnership(newBoardId, req.user.sub);
+      await assertBoardAccess(newBoardId, req.user.sub, 'write');
     } catch (err) {
       if (err.status === 403) return res.status(403).json({ error: 'Forbidden' });
       if (err.statusCode === 404) return res.status(404).json({ error: 'Board not found' });
@@ -166,7 +178,6 @@ router.put('/:id', async (req, res) => {
 // DELETE /api/tasks/:id
 router.delete('/:id', async (req, res) => {
   const db = getTasksDb();
-
   let existing;
   try {
     existing = await db.get(req.params.id);
@@ -175,7 +186,12 @@ router.delete('/:id', async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch task' });
   }
 
-  if (existing.user_id !== req.user.sub) return res.status(403).json({ error: 'Forbidden' });
+  try {
+    await assertBoardAccess(existing.board_id, req.user.sub, 'write');
+  } catch (err) {
+    if (err.status === 403) return res.status(403).json({ error: 'Forbidden' });
+    return res.status(500).json({ error: 'Failed to verify board' });
+  }
 
   try {
     await db.destroy(existing._id, existing._rev);

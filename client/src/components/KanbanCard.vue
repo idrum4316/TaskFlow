@@ -59,6 +59,7 @@
 
         <!-- Hover actions -->
         <div
+          v-if="canEdit"
           class="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-100"
           @click.stop
           role="group"
@@ -86,7 +87,9 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, inject } from 'vue';
+
+const canEdit = inject('canEdit', true);
 
 const props = defineProps({ task: { type: Object, required: true } });
 defineEmits(['edit', 'delete', 'status-change']);

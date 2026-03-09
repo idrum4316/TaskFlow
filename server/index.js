@@ -6,6 +6,10 @@ const { runMigrations } = require('./migrations/runner');
 const authRoutes = require('./routes/auth');
 const boardRoutes = require('./routes/boards');
 const taskRoutes = require('./routes/tasks');
+const shareRoutes = require('./routes/shares');
+const invitationRoutes = require('./routes/invitations');
+const userRoutes = require('./routes/users');
+const commentRoutes = require('./routes/comments');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -15,7 +19,11 @@ app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/boards', boardRoutes);
+app.use('/api/boards/:id/shares', shareRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/invitations', invitationRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/tasks/:id/comments', commentRoutes);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 

@@ -5,14 +5,26 @@ const { requireAuth } = require('../middleware/auth');
 const router = express.Router();
 router.use(requireAuth);
 
-// GET /api/boards — list all boards for the current user
+// GET /api/boards — list all boards: owned + accepted-shared
 router.get('/', async (req, res) => {
   try {
-    const { rows } = await getBoardsDb().view('boards', 'by_user', {
-      key: req.user.sub,
-      include_docs: true,
+    const db = getBoardsDb();
+    const [ownedResult, sharedResult] = await Promise.all([
+      db.view('boards', 'by_user', { key: req.user.sub, include_docs: true }),
+      db.view('boards', 'by_shared_user', { key: req.user.sub, include_docs: true }),
+    ]);
+
+    const ownedBoards = ownedResult.rows.map((r) => ({ ...r.doc, _role: 'owner' }));
+    const sharedBoards = sharedResult.rows.map((r) => {
+      const share = (r.doc.shares || []).find(
+        (s) => s.user_id === req.user.sub && s.status === 'accepted'
+      );
+      // Strip shares array from non-owner responses
+      const { shares: _, ...rest } = r.doc;
+      return { ...rest, _role: 'shared', _access: share?.access ?? 'read' };
     });
-    res.json(rows.map((r) => r.doc));
+
+    res.json([...ownedBoards, ...sharedBoards]);
   } catch {
     res.status(500).json({ error: 'Failed to fetch boards' });
   }
@@ -30,19 +42,20 @@ router.post('/', async (req, res) => {
     type: 'board',
     user_id: req.user.sub,
     name: name.trim(),
+    shares: [],
     created_at: now,
     updated_at: now,
   };
 
   try {
     const result = await getBoardsDb().insert(doc);
-    res.status(201).json({ ...doc, _id: result.id, _rev: result.rev });
+    res.status(201).json({ ...doc, _id: result.id, _rev: result.rev, _role: 'owner' });
   } catch {
     res.status(500).json({ error: 'Failed to create board' });
   }
 });
 
-// PUT /api/boards/:id — rename a board
+// PUT /api/boards/:id — rename a board (owner only)
 router.put('/:id', async (req, res) => {
   const { name } = req.body;
   if (!name || !name.trim()) {
@@ -63,13 +76,13 @@ router.put('/:id', async (req, res) => {
   const updated = { ...existing, name: name.trim(), updated_at: new Date().toISOString() };
   try {
     const result = await db.insert(updated);
-    res.json({ ...updated, _rev: result.rev });
+    res.json({ ...updated, _rev: result.rev, _role: 'owner' });
   } catch {
     res.status(500).json({ error: 'Failed to update board' });
   }
 });
 
-// DELETE /api/boards/:id — delete board and all its tasks
+// DELETE /api/boards/:id — delete board and all its tasks (owner only)
 router.delete('/:id', async (req, res) => {
   const boardsDb = getBoardsDb();
   const tasksDb = getTasksDb();
@@ -84,7 +97,6 @@ router.delete('/:id', async (req, res) => {
 
   if (existing.user_id !== req.user.sub) return res.status(403).json({ error: 'Forbidden' });
 
-  // Delete all tasks belonging to this board
   try {
     const { rows } = await tasksDb.view('tasks', 'by_board', {
       key: req.params.id,

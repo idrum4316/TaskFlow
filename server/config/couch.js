@@ -42,6 +42,14 @@ const TASK_DESIGN_DOC = {
         }
       }`,
     },
+    // Comments for a task
+    by_task: {
+      map: `function (doc) {
+        if (doc.type === 'comment') {
+          emit(doc.task_id, null);
+        }
+      }`,
+    },
   },
 };
 
@@ -52,6 +60,28 @@ const BOARD_DESIGN_DOC = {
       map: `function (doc) {
         if (doc.type === 'board') {
           emit(doc.user_id, null);
+        }
+      }`,
+    },
+    by_shared_user: {
+      map: `function (doc) {
+        if (doc.type === 'board' && doc.shares) {
+          doc.shares.forEach(function(share) {
+            if (share.status === 'accepted') {
+              emit(share.user_id, null);
+            }
+          });
+        }
+      }`,
+    },
+    by_invitee: {
+      map: `function (doc) {
+        if (doc.type === 'board' && doc.shares) {
+          doc.shares.forEach(function(share) {
+            if (share.status === 'pending') {
+              emit(share.user_id, null);
+            }
+          });
         }
       }`,
     },

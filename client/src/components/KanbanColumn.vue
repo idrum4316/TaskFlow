@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col w-72 flex-shrink-0">
+  <div class="flex flex-col w-96 flex-shrink-0">
     <!-- Column header -->
     <div :class="['flex items-center justify-between px-3 py-2.5 rounded-t-xl border-t-2', headerStyle]">
       <div class="flex items-center gap-2">
@@ -9,6 +9,7 @@
         </span>
       </div>
       <button
+        v-if="canEdit"
         @click="$emit('add', status)"
         :class="['w-7 h-7 rounded-lg flex items-center justify-center text-base font-medium transition-colors', addBtnStyle]"
         :aria-label="`Add task to ${title}`"
@@ -38,7 +39,7 @@
       />
 
       <button
-        v-if="!loading"
+        v-if="!loading && canEdit"
         @click="$emit('add', status)"
         :class="['w-full py-2 mt-auto text-xs font-medium rounded-xl transition-colors border border-dashed', addAreaStyle]"
         :aria-label="`Add task to ${title}`"
@@ -50,8 +51,10 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, inject } from 'vue';
 import KanbanCard from './KanbanCard.vue';
+
+const canEdit = inject('canEdit', true);
 
 const props = defineProps({
   title: { type: String, required: true },

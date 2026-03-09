@@ -14,7 +14,7 @@
       </div>
       <p class="text-sm font-medium text-zinc-700">No tasks yet</p>
       <p class="text-xs text-zinc-400 mt-1">Add your first task to get started</p>
-      <button @click="$emit('add', 'todo')" class="btn-primary mt-4 text-xs">
+      <button v-if="canEdit" @click="$emit('add', 'todo')" class="btn-primary mt-4 text-xs">
         Add first task
       </button>
     </div>
@@ -115,6 +115,7 @@
 
             <!-- Actions -->
             <div
+              v-if="canEdit"
               class="flex gap-1 opacity-0 group-hover/row:opacity-100 focus-within:opacity-100 transition-opacity flex-shrink-0"
               role="group"
               :aria-label="`Actions for ${task.title}`"
@@ -140,7 +141,9 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, inject } from 'vue';
+
+const canEdit = inject('canEdit', true);
 
 const props = defineProps({
   tasks: { type: Array, default: () => [] },
