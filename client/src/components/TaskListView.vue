@@ -220,10 +220,10 @@ function statusBadgeStyle(s) {
 function statusLabel(s) { return statusMap.value[s]?.label || s; }
 
 function formatDate(d) {
-  return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return new Date(d + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 function isOverdue(task) {
-  return task.due_date && !isDoneStatus(task.status) && new Date(task.due_date) < new Date();
+  return task.due_date && !isDoneStatus(task.status) && new Date(task.due_date + 'T00:00:00') < new Date();
 }
 </script>

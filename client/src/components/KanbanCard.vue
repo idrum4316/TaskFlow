@@ -136,12 +136,12 @@ const priorityBadge = computed(() => ({
 const overdue = computed(() =>
   !!props.task.due_date &&
   !isDone.value &&
-  new Date(props.task.due_date) < new Date()
+  new Date(props.task.due_date + 'T00:00:00') < new Date()
 );
 
 const dueSoon = computed(() => {
   if (!props.task.due_date || isDone.value || overdue.value) return false;
-  const due = new Date(props.task.due_date);
+  const due = new Date(props.task.due_date + 'T00:00:00');
   const now = new Date();
   const diffDays = (due - now) / (1000 * 60 * 60 * 24);
   return diffDays <= 2;
@@ -150,6 +150,6 @@ const dueSoon = computed(() => {
 const hasSubtleDescription = false; // reserved for future use
 
 function formatDate(d) {
-  return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return new Date(d + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 </script>

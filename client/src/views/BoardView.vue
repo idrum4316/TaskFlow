@@ -159,7 +159,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, h, provide } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, h, provide, nextTick } from 'vue';
 import { useRoute, useRouter, RouterLink } from 'vue-router';
 import { useBoardsStore } from '@/stores/boards';
 import { useTasksStore } from '@/stores/tasks';
@@ -297,10 +297,13 @@ async function handleStatusChange({ id, status }) {
   if (task) await tasksStore.updateTask(id, { ...task, status });
 }
 
-function handleOpenLinkedTask(taskId) {
+async function handleOpenLinkedTask(taskId) {
   const task = tasksStore.tasks.find((t) => t._id === taskId);
   if (task) {
+    showForm.value = false;
+    await nextTick();
     editingTask.value = task;
+    showForm.value = true;
   }
 }
 
