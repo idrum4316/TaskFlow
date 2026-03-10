@@ -66,6 +66,24 @@ router.get('/', async (req, res) => {
       });
       docs = rows.map((r) => r.doc);
     }
+
+    // Enrich tasks with comment and attachment counts
+    const taskIds = docs.map((d) => d._id);
+    if (taskIds.length) {
+      const [commentRows, attachmentRows] = await Promise.all([
+        db.view('tasks', 'by_task', { keys: taskIds }).then((r) => r.rows),
+        db.view('tasks', 'attachments_by_task', { keys: taskIds }).then((r) => r.rows),
+      ]);
+      const commentCounts = {};
+      const attachmentCounts = {};
+      for (const r of commentRows) commentCounts[r.key] = (commentCounts[r.key] || 0) + 1;
+      for (const r of attachmentRows) attachmentCounts[r.key] = (attachmentCounts[r.key] || 0) + 1;
+      for (const doc of docs) {
+        doc.comment_count = commentCounts[doc._id] || 0;
+        doc.attachment_count = attachmentCounts[doc._id] || 0;
+      }
+    }
+
     res.json(docs);
   } catch (err) {
     console.error(err);
