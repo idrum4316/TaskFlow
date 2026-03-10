@@ -33,10 +33,17 @@ export const useBoardsStore = defineStore('boards', () => {
     return data;
   }
 
+  async function updateBoard(id, payload) {
+    const { data } = await api.put(`/boards/${id}`, payload);
+    const index = boards.value.findIndex((b) => b._id === id);
+    if (index !== -1) boards.value[index] = data;
+    return data;
+  }
+
   async function deleteBoard(id) {
     await api.delete(`/boards/${id}`);
     boards.value = boards.value.filter((b) => b._id !== id);
   }
 
-  return { boards, loading, error, fetchBoards, createBoard, renameBoard, deleteBoard };
+  return { boards, loading, error, fetchBoards, createBoard, renameBoard, updateBoard, deleteBoard };
 });

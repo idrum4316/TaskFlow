@@ -7,15 +7,18 @@ const { requireAuth } = require('../middleware/auth');
 const router = express.Router();
 router.use(requireAuth);
 
-const VALID_STATUSES = ['todo', 'in-progress', 'done'];
+const DEFAULT_STATUSES = ['todo', 'in-progress', 'done'];
 const VALID_PRIORITIES = ['low', 'medium', 'high'];
 
-function validateTask(body, requireBoardId = false) {
+function validateTask(body, requireBoardId = false, boardStatuses = null) {
   const errors = [];
   if (!body.title || !body.title.trim()) errors.push('title is required');
   if (requireBoardId && !body.board_id) errors.push('board_id is required');
-  if (body.status && !VALID_STATUSES.includes(body.status)) {
-    errors.push(`status must be one of: ${VALID_STATUSES.join(', ')}`);
+  const validStatuses = boardStatuses
+    ? boardStatuses.map((s) => s.id)
+    : DEFAULT_STATUSES;
+  if (body.status && !validStatuses.includes(body.status)) {
+    errors.push(`status must be one of: ${validStatuses.join(', ')}`);
   }
   if (body.priority && !VALID_PRIORITIES.includes(body.priority)) {
     errors.push(`priority must be one of: ${VALID_PRIORITIES.join(', ')}`);
@@ -53,7 +56,7 @@ router.get('/', async (req, res) => {
   const db = getTasksDb();
   try {
     let docs;
-    if (status && VALID_STATUSES.includes(status)) {
+    if (status) {
       const { rows } = await db.view('tasks', 'by_board_and_status', {
         key: [board_id, status],
         include_docs: true,
@@ -93,17 +96,19 @@ router.get('/', async (req, res) => {
 
 // POST /api/tasks
 router.post('/', async (req, res) => {
-  const errors = validateTask(req.body, true);
-  if (errors.length) return res.status(400).json({ errors });
-
+  let board;
   try {
-    await assertBoardAccess(req.body.board_id, req.user.sub, 'write');
+    board = await assertBoardAccess(req.body.board_id, req.user.sub, 'write');
   } catch (err) {
     if (err.status === 403) return res.status(403).json({ error: 'Forbidden' });
     if (err.statusCode === 404) return res.status(404).json({ error: 'Board not found' });
     return res.status(500).json({ error: 'Failed to verify board' });
   }
 
+  const errors = validateTask(req.body, true, board.statuses);
+  if (errors.length) return res.status(400).json({ errors });
+
+  const defaultStatus = board.statuses?.[0]?.id || 'todo';
   const now = new Date().toISOString();
   const doc = {
     type: 'task',
@@ -111,7 +116,7 @@ router.post('/', async (req, res) => {
     board_id: req.body.board_id,
     title: req.body.title.trim(),
     description: req.body.description?.trim() || '',
-    status: req.body.status || 'todo',
+    status: req.body.status || defaultStatus,
     priority: req.body.priority || 'medium',
     due_date: req.body.due_date || null,
     created_at: now,
@@ -146,9 +151,6 @@ router.get('/:id', async (req, res) => {
 
 // PUT /api/tasks/:id
 router.put('/:id', async (req, res) => {
-  const errors = validateTask(req.body);
-  if (errors.length) return res.status(400).json({ errors });
-
   const db = getTasksDb();
   let existing;
   try {
@@ -158,12 +160,16 @@ router.put('/:id', async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch task' });
   }
 
+  let board;
   try {
-    await assertBoardAccess(existing.board_id, req.user.sub, 'write');
+    board = await assertBoardAccess(existing.board_id, req.user.sub, 'write');
   } catch (err) {
     if (err.status === 403) return res.status(403).json({ error: 'Forbidden' });
     return res.status(500).json({ error: 'Failed to verify board' });
   }
+
+  const errors = validateTask(req.body, false, board.statuses);
+  if (errors.length) return res.status(400).json({ errors });
 
   const newBoardId = req.body.board_id ?? existing.board_id;
   if (newBoardId !== existing.board_id) {
@@ -258,6 +264,24 @@ router.delete('/:id', async (req, res) => {
       }
     } catch (err) {
       console.error('Failed to clean up comments:', err);
+    }
+
+    // Delete associated task links
+    try {
+      const { rows: linkRows } = await db.view('tasks', 'links_by_task', {
+        key: existing._id,
+        include_docs: true,
+      });
+      if (linkRows.length > 0) {
+        const bulkDocs = linkRows.map((r) => ({
+          _id: r.doc._id,
+          _rev: r.doc._rev,
+          _deleted: true,
+        }));
+        await db.bulk({ docs: bulkDocs });
+      }
+    } catch (err) {
+      console.error('Failed to clean up task links:', err);
     }
 
     await db.destroy(existing._id, existing._rev);

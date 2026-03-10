@@ -9,11 +9,11 @@
     <div class="flex-1 min-w-0">
       <div class="flex items-start justify-between gap-2">
         <h3
-          :class="['font-medium text-gray-900 truncate', task.status === 'done' && 'line-through text-gray-400']"
+          :class=\"['font-medium text-gray-900 truncate', isDone && 'line-through text-gray-400']\"
         >
           {{ task.title }}
         </h3>
-        <span :class="['flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full', statusClass]">
+        <span class="flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full" :style="statusStyle">
           {{ statusLabel }}
         </span>
       </div>
@@ -45,10 +45,32 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, inject } from 'vue';
 
-const props = defineProps({ task: { type: Object, required: true } });
+const props = defineProps({
+  task: { type: Object, required: true },
+  statuses: { type: Array, default: () => [] },
+});
 defineEmits(['edit', 'delete']);
+
+const doneStatusIds = inject('doneStatusIds', computed(() => new Set(['done'])));
+const isDone = computed(() => doneStatusIds.value.has(props.task.status));
+
+const DEFAULT_STATUSES = [
+  { id: 'todo', label: 'To Do', color: '#a1a1aa', done: false },
+  { id: 'in-progress', label: 'In Progress', color: '#6366f1', done: false },
+  { id: 'done', label: 'Done', color: '#10b981', done: true },
+];
+
+const statusList = computed(() =>
+  props.statuses.length ? props.statuses : DEFAULT_STATUSES
+);
+
+const statusMap = computed(() => {
+  const map = {};
+  for (const s of statusList.value) map[s.id] = s;
+  return map;
+});
 
 const priorityColor = computed(() => ({
   low: 'bg-gray-300',
@@ -56,17 +78,15 @@ const priorityColor = computed(() => ({
   high: 'bg-red-500',
 }[props.task.priority] || 'bg-gray-300'));
 
-const statusLabel = computed(() => ({
-  'todo': 'To Do',
-  'in-progress': 'In Progress',
-  'done': 'Done',
-}[props.task.status] || props.task.status));
+const statusLabel = computed(() => {
+  return statusMap.value[props.task.status]?.label || props.task.status;
+});
 
-const statusClass = computed(() => ({
-  'todo': 'bg-gray-100 text-gray-600',
-  'in-progress': 'bg-blue-100 text-blue-700',
-  'done': 'bg-green-100 text-green-700',
-}[props.task.status] || 'bg-gray-100 text-gray-600'));
+const statusStyle = computed(() => {
+  const s = statusMap.value[props.task.status];
+  if (!s) return { backgroundColor: '#f4f4f5', color: '#71717a' };
+  return { backgroundColor: s.color + '22', color: s.color };
+});
 
 function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });

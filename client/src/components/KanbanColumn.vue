@@ -3,7 +3,7 @@
     <!-- Column header -->
     <div class="flex items-center justify-between px-3 py-2 mb-2">
       <div class="flex items-center gap-2">
-        <span :class="['w-2 h-2 rounded-full flex-shrink-0', statusDot]" aria-hidden="true" />
+        <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: color }" aria-hidden="true" />
         <h3 class="font-semibold text-sm text-zinc-700 dark:text-zinc-300 tracking-wide uppercase">{{ title }}</h3>
         <span class="text-xs font-medium bg-zinc-200/80 dark:bg-zinc-700 rounded-full px-2 py-0.5 text-zinc-500 dark:text-zinc-400 tabular-nums min-w-[1.5rem] text-center">
           {{ tasks.length }}
@@ -54,7 +54,7 @@
 </template>
 
 <script setup>
-import { ref, computed, inject } from 'vue';
+import { ref, inject } from 'vue';
 import KanbanCard from './KanbanCard.vue';
 
 const canEdit = inject('canEdit', true);
@@ -62,6 +62,7 @@ const canEdit = inject('canEdit', true);
 const props = defineProps({
   title: { type: String, required: true },
   status: { type: String, required: true },
+  color: { type: String, default: '#a1a1aa' },
   tasks: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
 });
@@ -79,10 +80,4 @@ function onDrop(e) {
   const taskId = e.dataTransfer.getData('taskId');
   if (taskId) emit('status-change', { id: taskId, status: props.status });
 }
-
-const statusDot = computed(() => ({
-  'todo': 'bg-zinc-400 dark:bg-zinc-500',
-  'in-progress': 'bg-brand-500',
-  'done': 'bg-emerald-500',
-}[props.status] || 'bg-zinc-400'));
 </script>

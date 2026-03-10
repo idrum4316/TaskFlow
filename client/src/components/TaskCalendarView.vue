@@ -70,6 +70,7 @@
                 'text-left text-xs px-1.5 py-0.5 rounded-md truncate w-full transition-colors',
                 taskChipClass(task),
               ]"
+              :style="taskChipStyle(task)"
               :title="task.title"
             >
               {{ task.title }}
@@ -88,6 +89,7 @@
           :key="task._id"
           @click="$emit('edit', task)"
           :class="['text-xs px-2.5 py-1 rounded-full transition-colors', taskChipClass(task)]"
+          :style="taskChipStyle(task)"
         >
           {{ task.title }}
         </button>
@@ -97,14 +99,21 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, inject } from 'vue';
 
 const props = defineProps({
   tasks: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
+  statuses: { type: Array, default: () => [] },
 });
 
 defineEmits(['edit', 'add']);
+
+const doneStatusIds = inject('doneStatusIds', computed(() => new Set(['done'])));
+
+function isDoneStatus(statusId) {
+  return doneStatusIds.value.has(statusId);
+}
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = [
@@ -159,14 +168,31 @@ const calendarCells = computed(() => {
   return cells;
 });
 
-const STATUS_CHIP = {
-  todo: 'bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600',
-  'in-progress': 'bg-brand-100 dark:bg-brand-900/40 text-brand-800 dark:text-brand-300 hover:bg-brand-200 dark:hover:bg-brand-800/50',
-  done: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-800/50',
-};
+const DEFAULT_STATUSES = [
+  { id: 'todo', label: 'To Do', color: '#a1a1aa', done: false },
+  { id: 'in-progress', label: 'In Progress', color: '#6366f1', done: false },
+  { id: 'done', label: 'Done', color: '#10b981', done: true },
+];
+
+const statusMap = computed(() => {
+  const list = props.statuses.length ? props.statuses : DEFAULT_STATUSES;
+  const map = {};
+  for (const s of list) map[s.id] = s;
+  return map;
+});
 
 function taskChipClass(task) {
-  if (task.priority === 'high' && task.status !== 'done') return 'bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-300 hover:bg-rose-200 dark:hover:bg-rose-800/50';
-  return STATUS_CHIP[task.status] || STATUS_CHIP.todo;
+  if (task.priority === 'high' && !isDoneStatus(task.status)) return 'bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-300 hover:bg-rose-200 dark:hover:bg-rose-800/50';
+  const st = statusMap.value[task.status];
+  if (!st) return 'bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600';
+  // Use the color with low opacity for bg
+  return '';
+}
+
+function taskChipStyle(task) {
+  if (task.priority === 'high' && !isDoneStatus(task.status)) return {};
+  const st = statusMap.value[task.status];
+  if (!st) return {};
+  return { backgroundColor: st.color + '22', color: st.color };
 }
 </script>

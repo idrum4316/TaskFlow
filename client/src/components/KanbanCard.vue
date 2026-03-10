@@ -4,7 +4,7 @@
     @dragstart="onDragStart"
     @dragend="dragging = false"
     class="bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200/80 dark:border-zinc-700/80 hover:border-zinc-300 dark:hover:border-zinc-600 transition-all duration-150 cursor-grab active:cursor-grabbing group shadow-sm hover:shadow-md focus-within:ring-2 focus-within:ring-brand-500 focus-within:ring-offset-1 dark:focus-within:ring-offset-zinc-900"
-    :class="{ 'opacity-50': task.status === 'done', 'opacity-40 scale-[0.97]': dragging }"
+    :class="{ 'opacity-50': isDone, 'opacity-40 scale-[0.97]': dragging }"
   >
     <div class="p-3">
       <!-- Priority accent + Title -->
@@ -18,7 +18,7 @@
           <p
             :class="[
               'text-sm font-medium leading-snug flex-1',
-              task.status === 'done' ? 'line-through text-zinc-400 dark:text-zinc-500' : 'text-zinc-800 dark:text-zinc-100',
+              isDone ? 'line-through text-zinc-400 dark:text-zinc-500' : 'text-zinc-800 dark:text-zinc-100',
             ]"
           >
             {{ task.title }}
@@ -99,10 +99,13 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, inject } from 'vue';
 
 const props = defineProps({ task: { type: Object, required: true } });
 defineEmits(['edit', 'delete', 'status-change']);
+
+const doneStatusIds = inject('doneStatusIds', computed(() => new Set(['done'])));
+const isDone = computed(() => doneStatusIds.value.has(props.task.status));
 
 const dragging = ref(false);
 
@@ -132,12 +135,12 @@ const priorityBadge = computed(() => ({
 
 const overdue = computed(() =>
   !!props.task.due_date &&
-  props.task.status !== 'done' &&
+  !isDone.value &&
   new Date(props.task.due_date) < new Date()
 );
 
 const dueSoon = computed(() => {
-  if (!props.task.due_date || props.task.status === 'done' || overdue.value) return false;
+  if (!props.task.due_date || isDone.value || overdue.value) return false;
   const due = new Date(props.task.due_date);
   const now = new Date();
   const diffDays = (due - now) / (1000 * 60 * 60 * 24);

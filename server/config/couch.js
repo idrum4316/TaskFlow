@@ -59,6 +59,15 @@ const TASK_DESIGN_DOC = {
         }
       }`,
     },
+    // Task links (emits both sides so a single query returns all links for a task)
+    links_by_task: {
+      map: `function (doc) {
+        if (doc.type === 'task_link') {
+          emit(doc.source_id, null);
+          emit(doc.target_id, null);
+        }
+      }`,
+    },
   },
 };
 

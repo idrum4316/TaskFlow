@@ -28,7 +28,7 @@
           :aria-expanded="!collapsed[group.status]"
           :aria-controls="`group-${group.status}`"
         >
-          <div :class="['w-2.5 h-2.5 rounded-full flex-shrink-0', group.dot]" aria-hidden="true" />
+          <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" :style="{ backgroundColor: group.color }" aria-hidden="true" />
           <span class="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{{ group.title }}</span>
           <span class="text-xs font-medium text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800 rounded-full px-2 py-0.5 tabular-nums">
             {{ group.tasks.length }}
@@ -84,7 +84,7 @@
               <span
                 :class="[
                   'text-sm font-medium block truncate',
-                  task.status === 'done' ? 'line-through text-zinc-400 dark:text-zinc-500' : 'text-zinc-900 dark:text-zinc-100',
+                  isDoneStatus(task.status) ? 'line-through text-zinc-400 dark:text-zinc-500' : 'text-zinc-900 dark:text-zinc-100',
                 ]"
               >
                 {{ task.title }}
@@ -109,7 +109,10 @@
             </span>
 
             <!-- Status badge -->
-            <span :class="['text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 hidden md:inline-block', statusClass(task.status)]">
+            <span
+              class="text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 hidden md:inline-block"
+              :style="statusBadgeStyle(task.status)"
+            >
               {{ statusLabel(task.status) }}
             </span>
 
@@ -144,13 +147,35 @@
 import { computed, reactive, ref, inject } from 'vue';
 
 const canEdit = inject('canEdit', true);
+const doneStatusIds = inject('doneStatusIds', computed(() => new Set(['done'])));
+
+function isDoneStatus(statusId) {
+  return doneStatusIds.value.has(statusId);
+}
 
 const props = defineProps({
   tasks: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
+  statuses: { type: Array, default: () => [] },
 });
 
 const emit = defineEmits(['add', 'edit', 'delete', 'status-change']);
+
+const DEFAULT_STATUSES = [
+  { id: 'todo', label: 'To Do', color: '#a1a1aa', done: false },
+  { id: 'in-progress', label: 'In Progress', color: '#6366f1', done: false },
+  { id: 'done', label: 'Done', color: '#10b981', done: true },
+];
+
+const statusList = computed(() =>
+  props.statuses.length ? props.statuses : DEFAULT_STATUSES
+);
+
+const statusMap = computed(() => {
+  const map = {};
+  for (const s of statusList.value) map[s.id] = s;
+  return map;
+});
 
 const draggingId = ref(null);
 const dropTarget = ref(null);
@@ -171,19 +196,14 @@ function onListDrop(e, status) {
   if (taskId) emit('status-change', { id: taskId, status });
 }
 
-const collapsed = reactive({ todo: false, 'in-progress': false, done: false });
-
-const STATUS_META = {
-  todo: { title: 'To Do', dot: 'bg-zinc-400' },
-  'in-progress': { title: 'In Progress', dot: 'bg-brand-500' },
-  done: { title: 'Done', dot: 'bg-emerald-500' },
-};
+const collapsed = reactive({});
 
 const groups = computed(() =>
-  ['todo', 'in-progress', 'done'].map((status) => ({
-    status,
-    ...STATUS_META[status],
-    tasks: props.tasks.filter((t) => t.status === status),
+  statusList.value.map((s) => ({
+    status: s.id,
+    title: s.label,
+    color: s.color,
+    tasks: props.tasks.filter((t) => t.status === s.id),
   }))
 );
 
@@ -192,19 +212,18 @@ function toggleGroup(status) { collapsed[status] = !collapsed[status]; }
 const PRIORITY_BARS = { low: 'bg-zinc-300', medium: 'bg-amber-400', high: 'bg-rose-500' };
 function priorityBar(p) { return PRIORITY_BARS[p] || 'bg-zinc-300'; }
 
-const STATUS_CLASSES = {
-  todo: 'bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400',
-  'in-progress': 'bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300',
-  done: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300',
-};
-function statusClass(s) { return STATUS_CLASSES[s] || 'bg-zinc-100 text-zinc-600'; }
-function statusLabel(s) { return STATUS_META[s]?.title || s; }
+function statusBadgeStyle(s) {
+  const st = statusMap.value[s];
+  if (!st) return { backgroundColor: '#f4f4f5', color: '#71717a' };
+  return { backgroundColor: st.color + '22', color: st.color };
+}
+function statusLabel(s) { return statusMap.value[s]?.label || s; }
 
 function formatDate(d) {
   return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 function isOverdue(task) {
-  return task.due_date && task.status !== 'done' && new Date(task.due_date) < new Date();
+  return task.due_date && !isDoneStatus(task.status) && new Date(task.due_date) < new Date();
 }
 </script>

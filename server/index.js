@@ -15,6 +15,7 @@ const commentRoutes = require('./routes/comments');
 const adminRoutes = require('./routes/admin');
 const accountRoutes = require('./routes/account');
 const attachmentRoutes = require('./routes/attachments');
+const linkRoutes = require('./routes/links');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -30,6 +31,7 @@ app.use('/api/invitations', invitationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/tasks/:id/comments', commentRoutes);
 app.use('/api/tasks/:id/attachments', attachmentRoutes);
+app.use('/api/tasks/:id/links', linkRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/account', accountRoutes);
 

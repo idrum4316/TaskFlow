@@ -39,7 +39,8 @@
         :key="col.status"
         :title="col.title"
         :status="col.status"
-        :tasks="tasksByStatus[col.status]"
+        :color="col.color"
+        :tasks="tasksByStatus[col.status] || []"
         :loading="tasksStore.loading"
         @add="openCreateInColumn"
         @edit="openEdit"
@@ -54,6 +55,7 @@
       :task="editingTask"
       :board-id="boardId"
       :default-status="defaultStatus"
+      :statuses="boardStatuses"
       @save="handleSave"
       @close="closeForm"
     />
@@ -61,7 +63,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, provide } from 'vue';
 import { useRoute, RouterLink } from 'vue-router';
 import { useBoardsStore } from '@/stores/boards';
 import { useTasksStore } from '@/stores/tasks';
@@ -79,16 +81,33 @@ const showForm = ref(false);
 const editingTask = ref(null);
 const defaultStatus = ref('todo');
 
-const columns = [
-  { status: 'todo', title: 'To Do' },
-  { status: 'in-progress', title: 'In Progress' },
-  { status: 'done', title: 'Done' },
+const DEFAULT_STATUSES = [
+  { id: 'todo', label: 'To Do', color: '#a1a1aa', done: false },
+  { id: 'in-progress', label: 'In Progress', color: '#6366f1', done: false },
+  { id: 'done', label: 'Done', color: '#10b981', done: true },
 ];
 
+const boardStatuses = computed(() => board.value?.statuses || DEFAULT_STATUSES);
+
+const doneStatusIds = computed(() =>
+  new Set(boardStatuses.value.filter((s) => s.done).map((s) => s.id))
+);
+provide('doneStatusIds', doneStatusIds);
+
+const columns = computed(() =>
+  boardStatuses.value.map((s) => ({ status: s.id, title: s.label, color: s.color }))
+);
+
 const tasksByStatus = computed(() => {
-  const map = { todo: [], 'in-progress': [], done: [] };
+  const map = {};
+  for (const col of columns.value) map[col.status] = [];
   for (const task of tasksStore.tasks) {
-    if (map[task.status]) map[task.status].push(task);
+    if (map[task.status]) {
+      map[task.status].push(task);
+    } else {
+      const first = columns.value[0]?.status;
+      if (first && map[first]) map[first].push(task);
+    }
   }
   return map;
 });

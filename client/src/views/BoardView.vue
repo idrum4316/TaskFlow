@@ -44,6 +44,19 @@
         </button>
       </div>
 
+      <!-- Manage statuses button (owner only) -->
+      <button
+        v-if="isOwner"
+        @click="showStatusManager = true"
+        class="ml-2 flex items-center gap-1.5 text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-colors"
+      >
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 010-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        <span class="hidden sm:inline">Statuses</span>
+      </button>
+
       <!-- Share button (owner only) -->
       <button
         v-if="isOwner"
@@ -85,6 +98,7 @@
         v-if="activeView === 'kanban'"
         :tasks="tasksStore.tasks"
         :loading="tasksStore.loading"
+        :statuses="boardStatuses"
         @add="openCreateInColumn"
         @edit="openEdit"
         @delete="handleDelete"
@@ -94,6 +108,7 @@
         v-else-if="activeView === 'list'"
         :tasks="tasksStore.tasks"
         :loading="tasksStore.loading"
+        :statuses="boardStatuses"
         @add="openCreateInColumn"
         @edit="openEdit"
         @delete="handleDelete"
@@ -103,6 +118,7 @@
         v-else-if="activeView === 'calendar'"
         :tasks="tasksStore.tasks"
         :loading="tasksStore.loading"
+        :statuses="boardStatuses"
         @edit="openEdit"
         @add="openCreate"
       />
@@ -115,6 +131,7 @@
       :board-id="boardId"
       :default-status="defaultStatus"
       :read-only="!canEdit"
+      :statuses="boardStatuses"
       @save="handleSave"
       @close="closeForm"
     />
@@ -125,6 +142,17 @@
       :board-id="board._id"
       :board-name="board.name"
       @close="showShareModal = false"
+    />
+
+    <!-- Status manager drawer -->
+    <StatusManager
+      v-if="showStatusManager && board"
+      :statuses="boardStatuses"
+      :tasks="tasksStore.tasks"
+      :board-id="board._id"
+      :board-name="board.name"
+      @save="handleSaveStatuses"
+      @close="showStatusManager = false"
     />
   </div>
 </template>
@@ -140,6 +168,7 @@ import TaskListView from '@/components/TaskListView.vue';
 import TaskCalendarView from '@/components/TaskCalendarView.vue';
 import TaskForm from '@/components/TaskForm.vue';
 import ShareBoardModal from '@/components/ShareBoardModal.vue';
+import StatusManager from '@/components/StatusManager.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -155,7 +184,22 @@ const canEdit = computed(() => isOwner.value || board.value?._access === 'write'
 
 provide('canEdit', canEdit);
 
+const doneStatusIds = computed(() => {
+  const statuses = board.value?.statuses || DEFAULT_STATUSES;
+  return new Set(statuses.filter((s) => s.done).map((s) => s.id));
+});
+provide('doneStatusIds', doneStatusIds);
+
 const showShareModal = ref(false);
+const showStatusManager = ref(false);
+
+const DEFAULT_STATUSES = [
+  { id: 'todo', label: 'To Do', color: '#a1a1aa', done: false },
+  { id: 'in-progress', label: 'In Progress', color: '#6366f1', done: false },
+  { id: 'done', label: 'Done', color: '#10b981', done: true },
+];
+
+const boardStatuses = computed(() => board.value?.statuses || DEFAULT_STATUSES);
 
 const activeView = computed(() => {
   const v = route.query.view;
@@ -210,7 +254,7 @@ onUnmounted(() => {
 watch(boardId, load);
 
 function openCreate() {
-  defaultStatus.value = 'todo';
+  defaultStatus.value = boardStatuses.value[0]?.id || 'todo';
   editingTask.value = null;
   showForm.value = true;
 }
@@ -250,5 +294,18 @@ async function handleDelete(id) {
 async function handleStatusChange({ id, status }) {
   const task = tasksStore.tasks.find((t) => t._id === id);
   if (task) await tasksStore.updateTask(id, { ...task, status });
+}
+
+async function handleSaveStatuses({ statuses, reassignments }) {
+  // Reassign tasks from deleted statuses before saving
+  const entries = Object.entries(reassignments || {});
+  for (const [fromStatus, toStatus] of entries) {
+    const affected = tasksStore.tasks.filter((t) => t.status === fromStatus);
+    for (const task of affected) {
+      await tasksStore.updateTask(task._id, { ...task, status: toStatus });
+    }
+  }
+  await boardsStore.updateBoard(board.value._id, { name: board.value.name, statuses });
+  showStatusManager.value = false;
 }
 </script>

@@ -72,9 +72,7 @@
             <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" for="task-status">Status</label>
             <div class="relative">
               <select id="task-status" v-model="form.status" :disabled="readOnly" class="input pr-8 appearance-none disabled:bg-zinc-50 dark:disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-default">
-                <option value="todo">To Do</option>
-                <option value="in-progress">In Progress</option>
-                <option value="done">Done</option>
+                <option v-for="s in statusOptions" :key="s.id" :value="s.id">{{ s.label }}</option>
               </select>
               <svg class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
@@ -102,7 +100,7 @@
           <span :class="['w-2.5 h-2.5 rounded-full flex-shrink-0', priorityDot]" aria-hidden="true" />
           <span class="text-xs text-zinc-500 dark:text-zinc-400">
             <span class="font-medium capitalize">{{ form.priority }}</span> priority ·
-            <span class="capitalize">{{ { todo: 'Not started', 'in-progress': 'In progress', done: 'Completed' }[form.status] }}</span>
+            <span>{{ currentStatusLabel }}</span>
           </span>
         </div>
 
@@ -120,6 +118,9 @@
 
         <!-- Comments (edit mode only) -->
         <TaskComments v-if="task" :task-id="task._id" :board-id="boardId" />
+
+        <!-- Linked tasks (edit mode only) -->
+        <TaskLinks v-if="task" :task-id="task._id" :board-id="boardId" :read-only="readOnly" />
 
         <!-- Attachments (edit mode only) -->
         <TaskAttachments v-if="task" :task-id="task._id" :read-only="readOnly" />
@@ -169,6 +170,7 @@
 <script setup>
 import { ref, reactive, computed } from 'vue';
 import TaskComments from './TaskComments.vue';
+import TaskLinks from './TaskLinks.vue';
 import TaskAttachments from './TaskAttachments.vue';
 
 const props = defineProps({
@@ -176,8 +178,24 @@ const props = defineProps({
   boardId: { type: String, default: null },
   defaultStatus: { type: String, default: 'todo' },
   readOnly: { type: Boolean, default: false },
+  statuses: { type: Array, default: () => [] },
 });
 const emit = defineEmits(['save', 'close']);
+
+const DEFAULT_STATUSES = [
+  { id: 'todo', label: 'To Do', color: '#a1a1aa', done: false },
+  { id: 'in-progress', label: 'In Progress', color: '#6366f1', done: false },
+  { id: 'done', label: 'Done', color: '#10b981', done: true },
+];
+
+const statusOptions = computed(() =>
+  props.statuses.length ? props.statuses : DEFAULT_STATUSES
+);
+
+const currentStatusLabel = computed(() => {
+  const s = statusOptions.value.find((st) => st.id === form.status);
+  return s ? s.label : form.status;
+});
 
 const saving = ref(false);
 const errorMsg = ref('');
