@@ -1,5 +1,5 @@
 <template>
-  <div class="flex gap-5 p-5 overflow-x-auto flex-1 items-start scroll-smooth">
+  <div class="flex gap-3 sm:gap-5 p-3 sm:p-5 overflow-x-auto flex-1 items-start scroll-smooth">
     <KanbanColumn
       v-for="col in columns"
       :key="col.status"

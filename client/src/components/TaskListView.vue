@@ -1,5 +1,5 @@
 <template>
-  <div class="px-6 py-5 overflow-y-auto flex-1">
+  <div class="px-3 sm:px-6 py-4 sm:py-5 overflow-y-auto flex-1">
     <!-- Loading skeleton -->
     <div v-if="loading && !tasks.length" class="space-y-1" aria-busy="true" aria-label="Loading tasks">
       <div v-for="i in 5" :key="i" class="h-14 rounded-xl bg-zinc-200/60 dark:bg-zinc-700/60 animate-pulse" aria-hidden="true" />

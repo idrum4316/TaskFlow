@@ -18,8 +18,12 @@
       'relative ml-auto bg-white dark:bg-zinc-900 shadow-drawer flex flex-col h-full animate-slide-in-right',
       task ? 'w-full max-w-2xl' : 'w-full max-w-md',
     ]">
+      <!-- Mobile drag handle -->
+      <div class="md:hidden flex justify-center py-1.5 flex-shrink-0" aria-hidden="true">
+        <div class="w-8 h-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
+      </div>
       <!-- Drawer header -->
-      <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-700 flex-shrink-0">
+      <div class="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-zinc-200 dark:border-zinc-700 flex-shrink-0">
         <div class="flex items-center gap-3 min-w-0">
           <div class="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0"
             :class="task ? 'bg-brand-50 dark:bg-brand-950/40' : 'bg-emerald-50 dark:bg-emerald-950/40'"
@@ -47,11 +51,11 @@
         </button>
       </div>
 
-      <!-- Body: two-column for existing tasks, single-column for new -->
-      <div v-if="task" class="flex-1 overflow-hidden flex">
-        <!-- Left column: task details -->
+      <!-- Body: two-column on desktop, stacked on mobile -->
+      <div v-if="task" class="flex-1 overflow-hidden flex flex-col md:flex-row">
+        <!-- Main column: task details -->
         <div class="flex-1 overflow-y-auto min-w-0">
-          <form @submit.prevent="handleSubmit" class="px-6 py-5 space-y-5">
+          <form @submit.prevent="handleSubmit" class="px-4 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5">
             <!-- Title -->
             <div>
               <input
@@ -162,8 +166,8 @@
           </form>
         </div>
 
-        <!-- Right column: sidebar with tabs -->
-        <div class="w-72 flex-shrink-0 border-l border-zinc-200 dark:border-zinc-700 flex flex-col bg-zinc-50/50 dark:bg-zinc-800/30 overflow-hidden">
+        <!-- Sidebar: right column on desktop, bottom section on mobile -->
+        <div class="w-full md:w-72 flex-shrink-0 border-t md:border-t-0 md:border-l border-zinc-200 dark:border-zinc-700 flex flex-col bg-zinc-50/50 dark:bg-zinc-800/30 overflow-hidden max-h-[45vh] md:max-h-full">
           <!-- Tab bar -->
           <div class="flex border-b border-zinc-200 dark:border-zinc-700 flex-shrink-0">
             <button
@@ -309,7 +313,7 @@
       </div>
 
       <!-- Footer actions -->
-      <div class="px-6 py-4 border-t border-zinc-200 dark:border-zinc-700 flex items-center gap-3 flex-shrink-0 bg-zinc-50 dark:bg-zinc-800/50">
+      <div class="px-4 sm:px-6 py-3 sm:py-4 border-t border-zinc-200 dark:border-zinc-700 flex items-center gap-3 flex-shrink-0 bg-zinc-50 dark:bg-zinc-800/50">
         <template v-if="readOnly">
           <button type="button" @click="$emit('close')" class="btn-primary flex-1">
             Close
