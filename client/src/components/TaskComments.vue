@@ -1,10 +1,5 @@
 <template>
-  <div class="pt-5 border-t border-zinc-100 dark:border-zinc-700">
-    <h3 class="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">
-      Comments
-      <span v-if="comments.length" class="text-xs font-normal text-zinc-400 dark:text-zinc-500 ml-1">({{ comments.length }})</span>
-    </h3>
-
+  <div>
     <!-- Loading skeleton -->
     <div v-if="loading" class="space-y-3 mb-4">
       <div v-for="i in 2" :key="i" class="flex gap-3">

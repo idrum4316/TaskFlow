@@ -1,11 +1,5 @@
 <template>
   <div class="space-y-3">
-    <div class="flex items-center justify-between">
-      <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-        Attachments
-        <span class="text-xs text-zinc-400 dark:text-zinc-500 font-normal ml-1">({{ attachments.length }}/{{ maxAttachments }})</span>
-      </label>
-    </div>
 
     <!-- Upload area -->
     <div

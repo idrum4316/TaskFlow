@@ -1,8 +1,9 @@
 <template>
-  <div class="pt-5 border-t border-zinc-100 dark:border-zinc-700">
-    <h3 class="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">
+  <div>
+    <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-3 flex items-center gap-2">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.86-2.54a4.5 4.5 0 00-1.242-7.244l-4.5-4.5a4.5 4.5 0 00-6.364 6.364L4.34 8.374" /></svg>
       Linked Tasks
-      <span v-if="links.length" class="text-xs font-normal text-zinc-400 dark:text-zinc-500 ml-1">({{ links.length }})</span>
+      <span v-if="links.length" class="text-[10px] font-semibold bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 rounded-full min-w-[18px] h-[18px] flex items-center justify-center">{{ links.length }}</span>
     </h3>
 
     <!-- Loading skeleton -->
