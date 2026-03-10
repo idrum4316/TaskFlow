@@ -24,6 +24,10 @@ export const useCommentsStore = defineStore('comments', () => {
     try {
       const { data } = await api.post(`/tasks/${taskId}/comments`, { body });
       comments.value.push(data);
+      // Update comment_count on the task in the tasks store
+      const { useTasksStore } = await import('@/stores/tasks');
+      const task = useTasksStore().tasks.find(t => t._id === taskId);
+      if (task) task.comment_count = (task.comment_count || 0) + 1;
       return data;
     } finally {
       posting.value = false;
@@ -33,6 +37,10 @@ export const useCommentsStore = defineStore('comments', () => {
   async function deleteComment(taskId, commentId) {
     await api.delete(`/tasks/${taskId}/comments/${commentId}`);
     comments.value = comments.value.filter((c) => c._id !== commentId);
+    // Update comment_count on the task in the tasks store
+    const { useTasksStore } = await import('@/stores/tasks');
+    const task = useTasksStore().tasks.find(t => t._id === taskId);
+    if (task && task.comment_count > 0) task.comment_count -= 1;
   }
 
   function clearComments() {

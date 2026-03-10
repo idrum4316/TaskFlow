@@ -24,7 +24,11 @@
         >
           {{ relationLabel(link) }}
         </span>
-        <span class="text-sm text-zinc-800 dark:text-zinc-200 truncate flex-1 min-w-0">{{ link.linked_task_title }}</span>
+        <button
+          type="button"
+          @click="$emit('open-task', link.linked_task_id)"
+          class="text-sm text-brand-600 dark:text-brand-400 hover:underline truncate flex-1 min-w-0 text-left"
+        >{{ link.linked_task_title }}</button>
         <button
           v-if="!readOnly"
           type="button"
@@ -143,6 +147,8 @@ const props = defineProps({
   boardId: { type: String, required: true },
   readOnly: { type: Boolean, default: false },
 });
+
+defineEmits(['open-task']);
 
 const linksStore = useLinksStore();
 const tasksStore = useTasksStore();

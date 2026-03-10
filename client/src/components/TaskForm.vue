@@ -100,7 +100,9 @@
               </div>
 
               <!-- Due date pill -->
-              <label :class="[
+              <label
+                @click="openDatePicker"
+                :class="[
                 'relative flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border cursor-pointer transition-colors',
                 form.due_date
                   ? dueDatePast
@@ -112,6 +114,7 @@
                 <span v-if="form.due_date">{{ formatDueDate(form.due_date) }}</span>
                 <span v-else>Add due date</span>
                 <input
+                  ref="dateInput"
                   v-model="form.due_date"
                   type="date"
                   :disabled="readOnly"
@@ -134,7 +137,7 @@
             </div>
 
             <!-- Linked tasks section (inline) -->
-            <TaskLinks :task-id="task._id" :board-id="boardId" :read-only="readOnly" />
+            <TaskLinks :task-id="task._id" :board-id="boardId" :read-only="readOnly" @open-task="(id) => $emit('open-task', id)" />
           </form>
         </div>
 
@@ -306,7 +309,7 @@ const props = defineProps({
   readOnly: { type: Boolean, default: false },
   statuses: { type: Array, default: () => [] },
 });
-const emit = defineEmits(['save', 'close']);
+const emit = defineEmits(['save', 'close', 'open-task']);
 
 const DEFAULT_STATUSES = [
   { id: 'todo', label: 'To Do', color: '#a1a1aa', done: false },
@@ -335,6 +338,12 @@ const statusPillStyle = computed(() => {
 const saving = ref(false);
 const errorMsg = ref('');
 const activeTab = ref('comments');
+const dateInput = ref(null);
+
+function openDatePicker() {
+  if (props.readOnly) return;
+  dateInput.value?.showPicker?.();
+}
 
 const form = reactive({
   title: props.task?.title || '',

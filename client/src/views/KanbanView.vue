@@ -58,6 +58,7 @@
       :statuses="boardStatuses"
       @save="handleSave"
       @close="closeForm"
+      @open-task="handleOpenLinkedTask"
     />
   </div>
 </template>
@@ -156,5 +157,12 @@ async function handleDelete(id) {
 async function handleStatusChange({ id, status }) {
   const task = tasksStore.tasks.find((t) => t._id === id);
   if (task) await tasksStore.updateTask(id, { ...task, status });
+}
+
+function handleOpenLinkedTask(taskId) {
+  const task = tasksStore.tasks.find((t) => t._id === taskId);
+  if (task) {
+    editingTask.value = task;
+  }
 }
 </script>
