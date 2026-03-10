@@ -57,6 +57,19 @@
         <span class="hidden sm:inline">Statuses</span>
       </button>
 
+      <!-- Manage labels button (owner only) -->
+      <button
+        v-if="isOwner"
+        @click="showLabelManager = true"
+        class="ml-2 flex items-center gap-1.5 text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-colors"
+      >
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
+        </svg>
+        <span class="hidden sm:inline">Labels</span>
+      </button>
+
       <!-- Share button (owner only) -->
       <button
         v-if="isOwner"
@@ -132,6 +145,7 @@
       :default-status="defaultStatus"
       :read-only="!canEdit"
       :statuses="boardStatuses"
+      :labels="boardLabels"
       @save="handleSave"
       @close="closeForm"
       @open-task="handleOpenLinkedTask"
@@ -155,6 +169,15 @@
       @save="handleSaveStatuses"
       @close="showStatusManager = false"
     />
+    <!-- Label manager drawer -->
+    <LabelManager
+      v-if="showLabelManager && board"
+      :labels="boardLabels"
+      :board-id="board._id"
+      :board-name="board.name"
+      @save="handleSaveLabels"
+      @close="showLabelManager = false"
+    />
   </div>
 </template>
 
@@ -170,6 +193,7 @@ import TaskCalendarView from '@/components/TaskCalendarView.vue';
 import TaskForm from '@/components/TaskForm.vue';
 import ShareBoardModal from '@/components/ShareBoardModal.vue';
 import StatusManager from '@/components/StatusManager.vue';
+import LabelManager from '@/components/LabelManager.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -185,6 +209,9 @@ const canEdit = computed(() => isOwner.value || board.value?._access === 'write'
 
 provide('canEdit', canEdit);
 
+const boardLabels = computed(() => board.value?.labels || []);
+provide('boardLabels', boardLabels);
+
 const doneStatusIds = computed(() => {
   const statuses = board.value?.statuses || DEFAULT_STATUSES;
   return new Set(statuses.filter((s) => s.done).map((s) => s.id));
@@ -193,6 +220,7 @@ provide('doneStatusIds', doneStatusIds);
 
 const showShareModal = ref(false);
 const showStatusManager = ref(false);
+const showLabelManager = ref(false);
 
 const DEFAULT_STATUSES = [
   { id: 'todo', label: 'To Do', color: '#a1a1aa', done: false },
@@ -318,5 +346,10 @@ async function handleSaveStatuses({ statuses, reassignments }) {
   }
   await boardsStore.updateBoard(board.value._id, { name: board.value.name, statuses });
   showStatusManager.value = false;
+}
+
+async function handleSaveLabels({ labels }) {
+  await boardsStore.updateBoard(board.value._id, { name: board.value.name, labels });
+  showLabelManager.value = false;
 }
 </script>

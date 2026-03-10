@@ -124,6 +124,27 @@
               </label>
             </div>
 
+            <!-- Labels -->
+            <div v-if="labels.length" class="flex flex-wrap items-center gap-1.5">
+              <button
+                v-for="l in labels"
+                :key="l.id"
+                type="button"
+                :disabled="readOnly"
+                @click="toggleLabel(l.id)"
+                :class="[
+                  'inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border transition-colors',
+                  form.labels.includes(l.id)
+                    ? 'border-transparent text-white shadow-sm'
+                    : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600',
+                ]"
+                :style="form.labels.includes(l.id) ? { backgroundColor: l.color } : {}"
+              >
+                <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: form.labels.includes(l.id) ? 'rgba(255,255,255,0.5)' : l.color }" />
+                {{ l.name }}
+              </button>
+            </div>
+
             <!-- Description -->
             <div>
               <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-2">Description</label>
@@ -239,6 +260,29 @@
           <input id="new-task-due" v-model="form.due_date" type="date" class="input" />
         </div>
 
+        <!-- Labels -->
+        <div v-if="labels.length">
+          <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">Labels</label>
+          <div class="flex flex-wrap gap-1.5">
+            <button
+              v-for="l in labels"
+              :key="l.id"
+              type="button"
+              @click="toggleLabel(l.id)"
+              :class="[
+                'inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border transition-colors',
+                form.labels.includes(l.id)
+                  ? 'border-transparent text-white shadow-sm'
+                  : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600',
+              ]"
+              :style="form.labels.includes(l.id) ? { backgroundColor: l.color } : {}"
+            >
+              <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: form.labels.includes(l.id) ? 'rgba(255,255,255,0.5)' : l.color }" />
+              {{ l.name }}
+            </button>
+          </div>
+        </div>
+
         <!-- Error -->
         <div
           v-if="errorMsg"
@@ -308,6 +352,7 @@ const props = defineProps({
   defaultStatus: { type: String, default: 'todo' },
   readOnly: { type: Boolean, default: false },
   statuses: { type: Array, default: () => [] },
+  labels: { type: Array, default: () => [] },
 });
 const emit = defineEmits(['save', 'close', 'open-task']);
 
@@ -351,7 +396,23 @@ const form = reactive({
   status: props.task?.status || props.defaultStatus,
   priority: props.task?.priority || 'medium',
   due_date: props.task?.due_date || '',
+  labels: props.task?.labels || [],
 });
+
+const showLabelPicker = ref(false);
+
+const labelMap = computed(() => {
+  const map = {};
+  for (const l of props.labels) map[l.id] = l;
+  return map;
+});
+
+function toggleLabel(labelId) {
+  if (props.readOnly) return;
+  const idx = form.labels.indexOf(labelId);
+  if (idx >= 0) form.labels.splice(idx, 1);
+  else form.labels.push(labelId);
+}
 
 const priorityPillClass = computed(() => ({
   low: 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400',

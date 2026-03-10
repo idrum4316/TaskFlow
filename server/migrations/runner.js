@@ -5,6 +5,7 @@ const migrations = [
   require('./001_add_boards'),
   require('./002_add_admin_field'),
   require('./003_add_board_statuses'),
+  require('./004_add_board_labels'),
 ];
 
 async function runMigrations() {

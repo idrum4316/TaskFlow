@@ -50,6 +50,7 @@ router.post('/', async (req, res) => {
     name: name.trim(),
     shares: [],
     statuses: DEFAULT_STATUSES,
+    labels: [],
     created_at: now,
     updated_at: now,
   };
@@ -62,9 +63,9 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT /api/boards/:id — update board name and/or statuses (owner only)
+// PUT /api/boards/:id — update board name, statuses, and/or labels (owner only)
 router.put('/:id', async (req, res) => {
-  const { name, statuses } = req.body;
+  const { name, statuses, labels } = req.body;
   if (!name || !name.trim()) {
     return res.status(400).json({ error: 'name is required' });
   }
@@ -100,10 +101,31 @@ router.put('/:id', async (req, res) => {
 
   if (existing.user_id !== req.user.sub) return res.status(403).json({ error: 'Forbidden' });
 
+  // Validate labels if provided
+  if (labels !== undefined) {
+    if (!Array.isArray(labels)) {
+      return res.status(400).json({ error: 'labels must be an array' });
+    }
+    const labelIds = new Set();
+    for (const l of labels) {
+      if (!l.id || !l.name || !l.color) {
+        return res.status(400).json({ error: 'Each label must have id, name, and color' });
+      }
+      if (!/^[a-z0-9-]+$/.test(l.id)) {
+        return res.status(400).json({ error: 'Label id must contain only lowercase letters, numbers, and hyphens' });
+      }
+      if (labelIds.has(l.id)) {
+        return res.status(400).json({ error: `Duplicate label id: ${l.id}` });
+      }
+      labelIds.add(l.id);
+    }
+  }
+
   const updated = {
     ...existing,
     name: name.trim(),
     ...(statuses !== undefined && { statuses }),
+    ...(labels !== undefined && { labels }),
     updated_at: new Date().toISOString(),
   };
   try {

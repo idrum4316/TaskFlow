@@ -24,6 +24,18 @@
         <span v-if="task.due_date">Due {{ formatDate(task.due_date) }}</span>
         <span class="capitalize">{{ task.priority }} priority</span>
       </div>
+
+      <!-- Labels -->
+      <div v-if="taskLabels.length" class="mt-2 flex flex-wrap gap-1">
+        <span
+          v-for="l in taskLabels"
+          :key="l.id"
+          class="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full text-white"
+          :style="{ backgroundColor: l.color }"
+        >
+          {{ l.name }}
+        </span>
+      </div>
     </div>
 
     <!-- Actions -->
@@ -55,6 +67,18 @@ defineEmits(['edit', 'delete']);
 
 const doneStatusIds = inject('doneStatusIds', computed(() => new Set(['done'])));
 const isDone = computed(() => doneStatusIds.value.has(props.task.status));
+
+const boardLabels = inject('boardLabels', computed(() => []));
+
+const labelMap = computed(() => {
+  const map = {};
+  for (const l of boardLabels.value) map[l.id] = l;
+  return map;
+});
+
+const taskLabels = computed(() =>
+  (props.task.labels || []).map((id) => labelMap.value[id]).filter(Boolean)
+);
 
 const DEFAULT_STATUSES = [
   { id: 'todo', label: 'To Do', color: '#a1a1aa', done: false },

@@ -119,6 +119,7 @@ router.post('/', async (req, res) => {
     status: req.body.status || defaultStatus,
     priority: req.body.priority || 'medium',
     due_date: req.body.due_date || null,
+    labels: Array.isArray(req.body.labels) ? req.body.labels : [],
     created_at: now,
     updated_at: now,
   };
@@ -190,6 +191,7 @@ router.put('/:id', async (req, res) => {
     status: req.body.status ?? existing.status,
     priority: req.body.priority ?? existing.priority,
     due_date: req.body.due_date !== undefined ? req.body.due_date : existing.due_date,
+    labels: Array.isArray(req.body.labels) ? req.body.labels : (existing.labels || []),
     updated_at: new Date().toISOString(),
   };
 

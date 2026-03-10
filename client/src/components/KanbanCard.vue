@@ -31,6 +31,18 @@
         {{ task.description }}
       </p>
 
+      <!-- Labels -->
+      <div v-if="taskLabels.length" class="flex flex-wrap gap-1 mt-2 ml-3">
+        <span
+          v-for="l in taskLabels"
+          :key="l.id"
+          class="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-full text-white leading-tight"
+          :style="{ backgroundColor: l.color }"
+        >
+          {{ l.name }}
+        </span>
+      </div>
+
       <!-- Metadata row: due date, priority, indicators -->
       <div class="flex items-center flex-wrap gap-1.5 mt-2.5 ml-3">
         <!-- Due date chip -->
@@ -101,11 +113,25 @@
 <script setup>
 import { computed, ref, inject } from 'vue';
 
-const props = defineProps({ task: { type: Object, required: true } });
+const props = defineProps({
+  task: { type: Object, required: true },
+});
 defineEmits(['edit', 'delete', 'status-change']);
 
 const doneStatusIds = inject('doneStatusIds', computed(() => new Set(['done'])));
 const isDone = computed(() => doneStatusIds.value.has(props.task.status));
+
+const boardLabels = inject('boardLabels', computed(() => []));
+
+const labelMap = computed(() => {
+  const map = {};
+  for (const l of boardLabels.value) map[l.id] = l;
+  return map;
+});
+
+const taskLabels = computed(() =>
+  (props.task.labels || []).map((id) => labelMap.value[id]).filter(Boolean)
+);
 
 const dragging = ref(false);
 
