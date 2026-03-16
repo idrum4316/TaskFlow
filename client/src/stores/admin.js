@@ -6,6 +6,7 @@ export const useAdminStore = defineStore('admin', () => {
   const users = ref([]);
   const settings = ref({ registration_enabled: true });
   const loading = ref(false);
+  const inviteTokens = ref([]);
 
   async function fetchUsers() {
     loading.value = true;
@@ -40,5 +41,25 @@ export const useAdminStore = defineStore('admin', () => {
     settings.value = data;
   }
 
-  return { users, settings, loading, fetchUsers, resetPassword, toggleAdmin, fetchSettings, updateSettings };
+  async function fetchInviteTokens() {
+    const { data } = await api.get('/admin/invite-tokens');
+    inviteTokens.value = data;
+  }
+
+  async function createInviteToken() {
+    const { data } = await api.post('/admin/invite-tokens');
+    inviteTokens.value.unshift({ ...data, used: false });
+    return data;
+  }
+
+  async function revokeInviteToken(token) {
+    await api.delete(`/admin/invite-tokens/${token}`);
+    inviteTokens.value = inviteTokens.value.filter((t) => t.token !== token);
+  }
+
+  return {
+    users, settings, loading, inviteTokens,
+    fetchUsers, resetPassword, toggleAdmin, fetchSettings, updateSettings,
+    fetchInviteTokens, createInviteToken, revokeInviteToken,
+  };
 });

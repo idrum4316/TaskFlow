@@ -1,6 +1,7 @@
 const express = require('express');
+const crypto = require('crypto');
 const bcrypt = require('bcrypt');
-const { getUsersDb, getSetting, setSetting } = require('../config/couch');
+const { getUsersDb, getSettingsDb, getSetting, setSetting } = require('../config/couch');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
@@ -100,6 +101,58 @@ router.put('/settings', async (req, res) => {
     res.json({ registration_enabled: current !== false });
   } catch {
     res.status(500).json({ error: 'Failed to update settings' });
+  }
+});
+
+// POST /api/admin/invite-tokens — generate a single-use invitation token
+router.post('/invite-tokens', async (req, res) => {
+  try {
+    const db = getSettingsDb();
+    const token = crypto.randomUUID();
+    await db.insert({
+      _id: `invite_${token}`,
+      type: 'invite_token',
+      token,
+      created_by: req.user.sub,
+      created_at: new Date().toISOString(),
+      used: false,
+    });
+    res.status(201).json({ token, created_at: new Date().toISOString() });
+  } catch {
+    res.status(500).json({ error: 'Failed to create invitation token' });
+  }
+});
+
+// GET /api/admin/invite-tokens — list all invitation tokens
+router.get('/invite-tokens', async (_req, res) => {
+  try {
+    const db = getSettingsDb();
+    const { docs } = await db.find({
+      selector: { type: 'invite_token' },
+      fields: ['token', 'created_at', 'created_by', 'used', 'used_at', 'used_by'],
+      limit: 10000,
+    });
+    res.json(docs);
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch invitation tokens' });
+  }
+});
+
+// DELETE /api/admin/invite-tokens/:token — revoke an invitation token
+router.delete('/invite-tokens/:token', async (req, res) => {
+  try {
+    const db = getSettingsDb();
+    const doc = await db.get(`invite_${req.params.token}`);
+    if (!doc || doc.type !== 'invite_token') {
+      return res.status(404).json({ error: 'Token not found' });
+    }
+    await db.destroy(doc._id, doc._rev);
+    res.json({ message: 'Token revoked' });
+  } catch (err) {
+    if (err.statusCode === 404) {
+      return res.status(404).json({ error: 'Token not found' });
+    }
+    res.status(500).json({ error: 'Failed to revoke token' });
   }
 });
 

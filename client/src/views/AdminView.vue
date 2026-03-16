@@ -35,6 +35,86 @@
       </div>
     </section>
 
+    <!-- Invitation links section -->
+    <section class="mb-10">
+      <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Invitation Links</h3>
+      <div class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Single-use invite links</p>
+            <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              Generate links that allow one person to register, even when registration is disabled
+            </p>
+          </div>
+          <button
+            @click="handleCreateInvite"
+            :disabled="creatingInvite"
+            class="btn-primary text-xs !py-1.5 !px-3"
+          >
+            {{ creatingInvite ? 'Generating…' : 'Generate link' }}
+          </button>
+        </div>
+
+        <!-- Copied confirmation -->
+        <div
+          v-if="copiedToken"
+          role="status"
+          class="flex items-start gap-2 text-sm text-green-700 bg-green-50 border border-green-200 px-3 py-2.5 rounded-lg dark:text-green-400 dark:bg-green-950/30 dark:border-green-800 mb-4"
+        >
+          Link copied to clipboard!
+        </div>
+
+        <!-- Token list -->
+        <div v-if="adminStore.inviteTokens.length > 0" class="divide-y divide-zinc-100 dark:divide-zinc-700">
+          <div
+            v-for="t in adminStore.inviteTokens"
+            :key="t.token"
+            class="flex items-center justify-between py-3 gap-3"
+          >
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2">
+                <code class="text-xs text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-700 px-2 py-0.5 rounded font-mono truncate max-w-[200px]">{{ t.token }}</code>
+                <span
+                  v-if="t.used"
+                  class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
+                >
+                  Used
+                </span>
+                <span
+                  v-else
+                  class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+                >
+                  Active
+                </span>
+              </div>
+              <p class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">
+                Created {{ formatDate(t.created_at) }}
+                <template v-if="t.used_at"> · Used {{ formatDate(t.used_at) }}</template>
+              </p>
+            </div>
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <button
+                v-if="!t.used"
+                @click="copyInviteLink(t.token)"
+                class="text-xs font-medium px-2.5 py-1.5 rounded-lg text-zinc-600 bg-zinc-100 hover:bg-zinc-200 dark:text-zinc-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 transition-colors"
+                title="Copy link"
+              >
+                Copy link
+              </button>
+              <button
+                @click="handleRevokeInvite(t.token)"
+                class="text-xs font-medium px-2.5 py-1.5 rounded-lg text-red-600 bg-red-50 hover:bg-red-100 dark:text-red-400 dark:bg-red-950/30 dark:hover:bg-red-900/40 transition-colors"
+                title="Revoke"
+              >
+                {{ t.used ? 'Remove' : 'Revoke' }}
+              </button>
+            </div>
+          </div>
+        </div>
+        <p v-else class="text-sm text-zinc-400 dark:text-zinc-500">No invitation links generated yet.</p>
+      </div>
+    </section>
+
     <!-- Users section -->
     <section>
       <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
@@ -205,6 +285,8 @@ import { useAuthStore } from '@/stores/auth';
 const adminStore = useAdminStore();
 const authStore = useAuthStore();
 const settingsLoading = ref(false);
+const creatingInvite = ref(false);
+const copiedToken = ref(false);
 
 const resetModal = reactive({
   open: false,
@@ -216,7 +298,7 @@ const resetModal = reactive({
 });
 
 onMounted(async () => {
-  await Promise.all([adminStore.fetchUsers(), adminStore.fetchSettings()]);
+  await Promise.all([adminStore.fetchUsers(), adminStore.fetchSettings(), adminStore.fetchInviteTokens()]);
 });
 
 async function toggleRegistration() {
@@ -234,9 +316,42 @@ async function handleToggleAdmin(user) {
   try {
     await adminStore.toggleAdmin(user._id);
   } catch (err) {
-    // Silently handle — could add toast later
     console.error('Failed to toggle admin:', err);
   }
+}
+
+async function handleCreateInvite() {
+  creatingInvite.value = true;
+  try {
+    const { token } = await adminStore.createInviteToken();
+    await copyInviteLink(token);
+  } finally {
+    creatingInvite.value = false;
+  }
+}
+
+async function copyInviteLink(token) {
+  const link = `${window.location.origin}/register?token=${token}`;
+  try {
+    await navigator.clipboard.writeText(link);
+    copiedToken.value = true;
+    setTimeout(() => { copiedToken.value = false; }, 3000);
+  } catch {
+    // Fallback: select the token text for manual copy
+  }
+}
+
+async function handleRevokeInvite(token) {
+  try {
+    await adminStore.revokeInviteToken(token);
+  } catch (err) {
+    console.error('Failed to revoke token:', err);
+  }
+}
+
+function formatDate(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 function openResetModal(user) {

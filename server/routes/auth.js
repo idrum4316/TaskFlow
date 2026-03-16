@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { TOTP, Secret } = require('otpauth');
-const { getUsersDb, getSetting } = require('../config/couch');
+const { getUsersDb, getSettingsDb, getSetting } = require('../config/couch');
 
 const router = express.Router();
 const SALT_ROUNDS = 12;
@@ -40,15 +40,32 @@ router.post('/register', async (req, res) => {
     return res.status(500).json({ error: 'Database error' });
   }
 
-  // If not the first user, check if registration is enabled
+  // If not the first user, check if registration is enabled (or a valid invite token is provided)
+  let inviteDoc = null;
   if (!isFirstUser) {
-    try {
-      const regEnabled = await getSetting('registration_enabled');
-      if (regEnabled === false) {
-        return res.status(403).json({ error: 'Registration is currently disabled' });
+    const { invitation_token } = req.body;
+    if (invitation_token) {
+      try {
+        const settingsDb = getSettingsDb();
+        inviteDoc = await settingsDb.get(`invite_${invitation_token}`);
+        if (!inviteDoc || inviteDoc.type !== 'invite_token' || inviteDoc.used) {
+          return res.status(403).json({ error: 'Invalid or already used invitation token' });
+        }
+      } catch (err) {
+        if (err.statusCode === 404) {
+          return res.status(403).json({ error: 'Invalid or already used invitation token' });
+        }
+        return res.status(500).json({ error: 'Database error' });
       }
-    } catch {
-      return res.status(500).json({ error: 'Database error' });
+    } else {
+      try {
+        const regEnabled = await getSetting('registration_enabled');
+        if (regEnabled === false) {
+          return res.status(403).json({ error: 'Registration is currently disabled' });
+        }
+      } catch {
+        return res.status(500).json({ error: 'Database error' });
+      }
     }
   }
 
@@ -72,6 +89,16 @@ router.post('/register', async (req, res) => {
 
   try {
     const result = await db.insert(doc);
+
+    // Mark invite token as used
+    if (inviteDoc) {
+      const settingsDb = getSettingsDb();
+      inviteDoc.used = true;
+      inviteDoc.used_at = new Date().toISOString();
+      inviteDoc.used_by = result.id;
+      await settingsDb.insert(inviteDoc);
+    }
+
     const token = signToken({ sub: result.id, username, email, is_admin });
     res.status(201).json({ token, user: { id: result.id, username, email, is_admin } });
   } catch {
@@ -80,10 +107,24 @@ router.post('/register', async (req, res) => {
 });
 
 // GET /api/auth/registration-status
-router.get('/registration-status', async (_req, res) => {
+router.get('/registration-status', async (req, res) => {
   try {
     const regEnabled = await getSetting('registration_enabled');
-    res.json({ registration_enabled: regEnabled !== false });
+    const result = { registration_enabled: regEnabled !== false };
+
+    // If an invitation token is provided, validate it
+    const { token } = req.query;
+    if (token) {
+      try {
+        const settingsDb = getSettingsDb();
+        const doc = await settingsDb.get(`invite_${token}`);
+        result.valid_token = !!(doc && doc.type === 'invite_token' && !doc.used);
+      } catch {
+        result.valid_token = false;
+      }
+    }
+
+    res.json(result);
   } catch {
     res.status(500).json({ error: 'Database error' });
   }

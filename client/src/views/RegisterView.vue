@@ -41,7 +41,7 @@
         </div>
 
         <!-- Registration disabled message -->
-        <div v-if="!checkingStatus && !registrationEnabled" class="space-y-4">
+        <div v-if="!checkingStatus && !registrationEnabled && !validToken" class="space-y-4">
           <div class="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2.5 rounded-lg dark:text-amber-300 dark:bg-amber-950/30 dark:border-amber-800">
             Registration is currently disabled. Please contact an administrator.
           </div>
@@ -54,6 +54,13 @@
         </div>
 
         <template v-else-if="!checkingStatus">
+        <!-- Invite token banner -->
+        <div
+          v-if="validToken"
+          class="flex items-start gap-2 text-sm text-brand-700 bg-brand-50 border border-brand-200 px-3 py-2.5 rounded-lg dark:text-brand-300 dark:bg-brand-950/30 dark:border-brand-800 mb-4"
+        >
+          You've been invited to create an account.
+        </div>
         <form @submit.prevent="handleSubmit" class="space-y-4" novalidate>
           <div>
             <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" for="username">
@@ -138,12 +145,13 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { RouterLink } from 'vue-router';
+import { RouterLink, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import api from '@/api/client';
 import AppLogo from '@/components/AppLogo.vue';
 
 const authStore = useAuthStore();
+const route = useRoute();
 const username = ref('');
 const email = ref('');
 const password = ref('');
@@ -151,14 +159,17 @@ const errorMsg = ref('');
 const loading = ref(false);
 const registrationEnabled = ref(true);
 const checkingStatus = ref(true);
+const inviteToken = ref(route.query.token || '');
+const validToken = ref(false);
 const year = computed(() => new Date().getFullYear());
 
 onMounted(async () => {
   try {
-    const { data } = await api.get('/auth/registration-status');
+    const params = inviteToken.value ? { params: { token: inviteToken.value } } : {};
+    const { data } = await api.get('/auth/registration-status', params);
     registrationEnabled.value = data.registration_enabled;
+    validToken.value = !!data.valid_token;
   } catch {
-    // Default to enabled if check fails
     registrationEnabled.value = true;
   } finally {
     checkingStatus.value = false;
@@ -169,7 +180,14 @@ async function handleSubmit() {
   errorMsg.value = '';
   loading.value = true;
   try {
-    await authStore.register(username.value, email.value, password.value);
+    const payload = { username: username.value, email: email.value, password: password.value };
+    if (inviteToken.value) {
+      payload.invitation_token = inviteToken.value;
+    }
+    const { data } = await api.post('/auth/register', payload);
+    authStore.setSession(data);
+    const router = (await import('@/router')).default;
+    router.push({ name: 'boards' });
   } catch (err) {
     errorMsg.value = err.response?.data?.error || 'Registration failed. Please try again.';
   } finally {
