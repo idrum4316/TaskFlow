@@ -4,28 +4,23 @@
     @dragstart="onDragStart"
     @dragend="dragging = false"
     @touchstart="onTouchStart"
-    class="bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200/80 dark:border-zinc-700/80 hover:border-zinc-300 dark:hover:border-zinc-600 transition-all duration-150 cursor-grab active:cursor-grabbing group shadow-sm hover:shadow-md focus-within:ring-2 focus-within:ring-brand-500 focus-within:ring-offset-1 dark:focus-within:ring-offset-zinc-900"
+    @click="$emit('edit')"
+    class="bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200/80 dark:border-zinc-700/80 hover:border-zinc-300 dark:hover:border-zinc-600 transition-all duration-150 cursor-pointer group shadow-sm hover:shadow-md"
     :class="{ 'opacity-50': isDone, 'opacity-40 scale-[0.97]': dragging || touchDragging }"
   >
     <div class="p-3">
       <!-- Priority accent + Title -->
-      <button
-        class="w-full text-left focus:outline-none"
-        @click="$emit('edit')"
-        :aria-label="`Edit task: ${task.title}`"
-      >
-        <div class="flex items-start gap-2">
-          <span :class="['w-1 h-5 rounded-full flex-shrink-0 mt-0.5', priorityBar]" aria-hidden="true" />
-          <p
-            :class="[
-              'text-sm font-medium leading-snug flex-1',
-              isDone ? 'line-through text-zinc-400 dark:text-zinc-500' : 'text-zinc-800 dark:text-zinc-100',
-            ]"
-          >
-            {{ task.title }}
-          </p>
-        </div>
-      </button>
+      <div class="flex items-start gap-2">
+        <span :class="['w-1 h-5 rounded-full flex-shrink-0 mt-0.5', priorityBar]" aria-hidden="true" />
+        <p
+          :class="[
+            'text-sm font-medium leading-snug flex-1',
+            isDone ? 'line-through text-zinc-400 dark:text-zinc-500' : 'text-zinc-800 dark:text-zinc-100',
+          ]"
+        >
+          {{ task.title }}
+        </p>
+      </div>
 
       <!-- Description preview -->
       <p v-if="task.description" class="mt-1.5 ml-3 text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">

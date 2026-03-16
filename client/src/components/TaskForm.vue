@@ -336,6 +336,14 @@
           </button>
         </template>
         <template v-else>
+          <!-- Delete -->
+          <button
+            type="button"
+            @click="showDeleteConfirm = true"
+            class="text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            Delete
+          </button>
           <!-- Existing task: auto-save indicator + conditional save -->
           <span v-if="autoSaving" class="text-xs text-zinc-400 dark:text-zinc-500 flex items-center gap-1.5">
             <svg class="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -363,6 +371,21 @@
           </button>
         </template>
       </div>
+
+      <!-- Delete confirmation overlay -->
+      <div v-if="showDeleteConfirm" class="absolute inset-0 z-50 flex items-center justify-center rounded-xl overflow-hidden">
+        <div class="absolute inset-0 bg-zinc-900/50 backdrop-blur-sm" @click="showDeleteConfirm = false" />
+        <div class="relative bg-white dark:bg-zinc-900 rounded-xl shadow-modal p-6 max-w-sm mx-4 animate-scale-in border border-zinc-200 dark:border-zinc-700">
+          <h3 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">Delete task?</h3>
+          <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+            This will permanently delete this task and all its comments, attachments, and links. This cannot be undone.
+          </p>
+          <div class="mt-5 flex gap-3 justify-end">
+            <button type="button" @click="showDeleteConfirm = false" class="btn-secondary">Cancel</button>
+            <button type="button" @click="confirmDelete" class="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-sm">Delete</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -384,7 +407,7 @@ const props = defineProps({
   statuses: { type: Array, default: () => [] },
   labels: { type: Array, default: () => [] },
 });
-const emit = defineEmits(['save', 'close', 'open-task', 'auto-save']);
+const emit = defineEmits(['save', 'close', 'open-task', 'auto-save', 'delete']);
 
 const DEFAULT_STATUSES = [
   { id: 'todo', label: 'To Do', color: '#a1a1aa', done: false },
@@ -415,6 +438,7 @@ const errorMsg = ref('');
 const autoSaving = ref(false);
 const dateInput = ref(null);
 const titleInput = ref(null);
+const showDeleteConfirm = ref(false);
 
 function autoResizeTitle() {
   const el = titleInput.value;
@@ -509,6 +533,11 @@ const { attachments } = storeToRefs(attachmentsStore);
 function formatDueDate(dateStr) {
   const d = new Date(dateStr + 'T00:00:00');
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function confirmDelete() {
+  showDeleteConfirm.value = false;
+  emit('delete', props.task._id);
 }
 
 async function handleSubmit() {

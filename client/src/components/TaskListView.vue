@@ -75,7 +75,8 @@
             @dragstart="onListDragStart($event, task._id)"
             @dragend="draggingId = null"
             @touchstart="onListTouchStart($event, task._id)"
-            class="flex items-center gap-3 bg-white dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700 rounded-xl px-4 py-3 hover:border-zinc-300 dark:hover:border-zinc-600 hover:shadow-card transition-all duration-150 group/row cursor-grab active:cursor-grabbing"
+            @click="$emit('edit', task)"
+            class="flex items-center gap-3 bg-white dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700 rounded-xl px-4 py-3 hover:border-zinc-300 dark:hover:border-zinc-600 hover:shadow-card transition-all duration-150 group/row cursor-pointer"
             :class="isItemDragging(task._id) ? 'opacity-40' : ''"
           >
             <!-- Priority bar -->
@@ -118,26 +119,29 @@
               {{ statusLabel(task.status) }}
             </span>
 
-            <!-- Actions -->
-            <div
-              v-if="canEdit"
-              class="flex gap-1 opacity-0 group-hover/row:opacity-100 focus-within:opacity-100 transition-opacity flex-shrink-0"
-              role="group"
-              :aria-label="`Actions for ${task.title}`"
+            <!-- Comment count indicator -->
+            <span
+              v-if="task.comment_count"
+              class="inline-flex items-center gap-0.5 text-[11px] text-zinc-400 dark:text-zinc-500 flex-shrink-0"
+              :title="`${task.comment_count} comment${task.comment_count !== 1 ? 's' : ''}`"
             >
-              <button
-                @click="$emit('edit', task)"
-                class="text-xs text-zinc-400 dark:text-zinc-500 hover:text-brand-600 dark:hover:text-brand-400 bg-zinc-100 dark:bg-zinc-700 hover:bg-brand-50 dark:hover:bg-brand-900/40 px-2.5 py-1 rounded-lg transition-colors font-medium"
-              >
-                Edit
-              </button>
-              <button
-                @click="$emit('delete', task._id)"
-                class="text-xs text-zinc-400 dark:text-zinc-500 hover:text-red-600 dark:hover:text-red-400 bg-zinc-100 dark:bg-zinc-700 hover:bg-red-50 dark:hover:bg-red-950/40 px-2.5 py-1 rounded-lg transition-colors font-medium"
-              >
-                Delete
-              </button>
-            </div>
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+              </svg>
+              {{ task.comment_count }}
+            </span>
+
+            <!-- Attachment count indicator -->
+            <span
+              v-if="task.attachment_count"
+              class="inline-flex items-center gap-0.5 text-[11px] text-zinc-400 dark:text-zinc-500 flex-shrink-0"
+              :title="`${task.attachment_count} attachment${task.attachment_count !== 1 ? 's' : ''}`"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
+              </svg>
+              {{ task.attachment_count }}
+            </span>
           </li>
         </ul>
       </section>

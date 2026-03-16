@@ -202,6 +202,7 @@
       @auto-save="handleAutoSave"
       @close="closeForm"
       @open-task="handleOpenLinkedTask"
+      @delete="handleFormDelete"
     />
 
     <!-- Share board modal -->
@@ -389,6 +390,11 @@ async function handleDelete(id) {
   if (confirm('Delete this task?')) {
     await tasksStore.deleteTask(id);
   }
+}
+
+async function handleFormDelete(id) {
+  await tasksStore.deleteTask(id);
+  closeForm();
 }
 
 async function handleStatusChange({ id, status }) {
