@@ -13,9 +13,11 @@ export default defineConfig({
         name: 'TaskFlow',
         short_name: 'TaskFlow',
         description: 'Manage your tasks and boards with TaskFlow',
+        id: '/',
         theme_color: '#7c3aed',
         background_color: '#fafafa',
         display: 'standalone',
+        display_override: ['standalone'],
         scope: '/',
         start_url: '/',
         icons: [
