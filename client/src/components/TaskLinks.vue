@@ -70,13 +70,14 @@
         <!-- Target task search -->
         <div>
           <label class="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Task</label>
-          <div class="relative">
+          <div class="relative" ref="searchWrapper">
             <input
               v-model="searchQuery"
               type="text"
               class="input text-sm"
               placeholder="Search tasks by title…"
               @input="handleSearch"
+              @focus="scrollSearchIntoView"
             />
             <!-- Search results dropdown -->
             <ul
@@ -161,6 +162,7 @@ const searchResults = ref([]);
 const selectedTask = ref(null);
 const adding = ref(false);
 const addError = ref('');
+const searchWrapper = ref(null);
 
 onMounted(() => linksStore.fetchLinks(props.taskId));
 onUnmounted(() => linksStore.clearLinks());
@@ -172,6 +174,12 @@ function relationLabel(link) {
 
 function relationBadgeClass(link) {
   return RELATION_BADGE_CLASSES[link.relation] || 'bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400';
+}
+
+function scrollSearchIntoView() {
+  setTimeout(() => {
+    searchWrapper.value?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 300);
 }
 
 function handleSearch() {
@@ -186,6 +194,9 @@ function handleSearch() {
   searchResults.value = tasksStore.tasks
     .filter((t) => !linkedIds.has(t._id) && t.title.toLowerCase().includes(q))
     .slice(0, 8);
+  if (searchResults.value.length) {
+    scrollSearchIntoView();
+  }
 }
 
 function selectTask(task) {
