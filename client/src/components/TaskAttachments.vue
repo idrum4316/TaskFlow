@@ -107,12 +107,21 @@
     <p v-else class="text-xs text-zinc-400 dark:text-zinc-500 text-center py-2">
       No attachments yet
     </p>
+
+    <ConfirmDialog
+      v-model="showDeleteDialog"
+      title="Delete attachment"
+      @confirm="executeDelete"
+    >
+      Are you sure you want to delete <span class="font-medium text-zinc-700 dark:text-zinc-300">{{ pendingDelete?.filename }}</span>? This action cannot be undone.
+    </ConfirmDialog>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, h } from 'vue';
 import { useAttachmentsStore } from '@/stores/attachments';
+import ConfirmDialog from './ConfirmDialog.vue';
 
 const props = defineProps({
   taskId: { type: String, required: true },
@@ -124,6 +133,8 @@ const fileInput = ref(null);
 const dragOver = ref(false);
 const maxAttachments = 10;
 const deleting = ref(new Set());
+const showDeleteDialog = ref(false);
+const pendingDelete = ref(null);
 
 const acceptTypes = '.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.svg';
 
@@ -169,7 +180,15 @@ async function download(att) {
   }
 }
 
-async function remove(att) {
+function remove(att) {
+  pendingDelete.value = att;
+  showDeleteDialog.value = true;
+}
+
+async function executeDelete() {
+  const att = pendingDelete.value;
+  if (!att) return;
+  pendingDelete.value = null;
   if (deleting.value.has(att._id)) return;
   deleting.value.add(att._id);
   try {

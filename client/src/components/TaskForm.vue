@@ -372,20 +372,12 @@
         </template>
       </div>
 
-      <!-- Delete confirmation overlay -->
-      <div v-if="showDeleteConfirm" class="absolute inset-0 z-50 flex items-center justify-center rounded-xl overflow-hidden">
-        <div class="absolute inset-0 bg-zinc-900/50 backdrop-blur-sm" @click="showDeleteConfirm = false" />
-        <div class="relative bg-white dark:bg-zinc-900 rounded-xl shadow-modal p-6 max-w-sm mx-4 animate-scale-in border border-zinc-200 dark:border-zinc-700">
-          <h3 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">Delete task?</h3>
-          <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-            This will permanently delete this task and all its comments, attachments, and links. This cannot be undone.
-          </p>
-          <div class="mt-5 flex gap-3 justify-end">
-            <button type="button" @click="showDeleteConfirm = false" class="btn-secondary">Cancel</button>
-            <button type="button" @click="confirmDelete" class="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-sm">Delete</button>
-          </div>
-        </div>
-      </div>
+      <ConfirmDialog
+        v-model="showDeleteConfirm"
+        title="Delete task?"
+        message="This will permanently delete this task and all its comments, attachments, and links. This cannot be undone."
+        @confirm="confirmDelete"
+      />
     </div>
   </div>
 </template>
@@ -395,6 +387,7 @@ import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue';
 import TaskComments from './TaskComments.vue';
 import TaskLinks from './TaskLinks.vue';
 import TaskAttachments from './TaskAttachments.vue';
+import ConfirmDialog from './ConfirmDialog.vue';
 import { useCommentsStore } from '@/stores/comments';
 import { useAttachmentsStore } from '@/stores/attachments';
 import { storeToRefs } from 'pinia';
@@ -536,7 +529,6 @@ function formatDueDate(dateStr) {
 }
 
 function confirmDelete() {
-  showDeleteConfirm.value = false;
   emit('delete', props.task._id);
 }
 

@@ -144,6 +144,13 @@
       :board-name="sharingBoard.name"
       @close="sharingBoard = null"
     />
+    <ConfirmDialog
+      v-model="showDeleteConfirm"
+      title="Delete board?"
+      @confirm="executeDeleteBoard"
+    >
+      Delete "<span class="font-medium text-zinc-700 dark:text-zinc-300">{{ pendingDeleteBoard?.name }}</span>" and all its tasks? This can't be undone.
+    </ConfirmDialog>
   </div>
 </template>
 
@@ -155,12 +162,15 @@ import { useInvitationsStore } from '@/stores/invitations';
 import BoardNameModal from '@/components/BoardNameModal.vue';
 import ShareBoardModal from '@/components/ShareBoardModal.vue';
 import InvitationsBanner from '@/components/InvitationsBanner.vue';
+import ConfirmDialog from '@/components/ConfirmDialog.vue';
 
 const boardsStore = useBoardsStore();
 const invitationsStore = useInvitationsStore();
 const showCreate = ref(false);
 const renamingBoard = ref(null);
 const sharingBoard = ref(null);
+const showDeleteConfirm = ref(false);
+const pendingDeleteBoard = ref(null);
 
 onMounted(() => {
   boardsStore.fetchBoards();
@@ -208,8 +218,14 @@ async function handleRename(name) {
 }
 
 async function handleDelete(board) {
-  if (confirm(`Delete "${board.name}" and all its tasks? This can't be undone.`)) {
-    await boardsStore.deleteBoard(board._id);
+  pendingDeleteBoard.value = board;
+  showDeleteConfirm.value = true;
+}
+
+async function executeDeleteBoard() {
+  if (pendingDeleteBoard.value) {
+    await boardsStore.deleteBoard(pendingDeleteBoard.value._id);
+    pendingDeleteBoard.value = null;
   }
 }
 </script>

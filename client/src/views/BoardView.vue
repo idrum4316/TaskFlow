@@ -248,6 +248,7 @@ import TaskForm from '@/components/TaskForm.vue';
 import ShareBoardModal from '@/components/ShareBoardModal.vue';
 import StatusManager from '@/components/StatusManager.vue';
 import LabelManager from '@/components/LabelManager.vue';
+import ConfirmDialog from '@/components/ConfirmDialog.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -276,6 +277,8 @@ const showShareModal = ref(false);
 const showStatusManager = ref(false);
 const showLabelManager = ref(false);
 const showBoardMenu = ref(false);
+const showDeleteConfirm = ref(false);
+const pendingDeleteId = ref(null);
 
 const DEFAULT_STATUSES = [
   { id: 'todo', label: 'To Do', color: '#a1a1aa', done: false },
@@ -387,8 +390,14 @@ async function handleAutoSave(payload) {
 }
 
 async function handleDelete(id) {
-  if (confirm('Delete this task?')) {
-    await tasksStore.deleteTask(id);
+  pendingDeleteId.value = id;
+  showDeleteConfirm.value = true;
+}
+
+async function executeDelete() {
+  if (pendingDeleteId.value) {
+    await tasksStore.deleteTask(pendingDeleteId.value);
+    pendingDeleteId.value = null;
   }
 }
 
