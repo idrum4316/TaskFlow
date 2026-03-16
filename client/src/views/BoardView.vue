@@ -217,6 +217,7 @@
         :statuses="boardStatuses"
         @edit="openEdit"
         @add="openCreate"
+        @due-date-change="handleDueDateChange"
       />
     </template>
 
@@ -467,6 +468,11 @@ async function handleFormDelete(id) {
 async function handleStatusChange({ id, status }) {
   const task = tasksStore.tasks.find((t) => t._id === id);
   if (task) await tasksStore.updateTask(id, { ...task, status });
+}
+
+async function handleDueDateChange({ id, due_date }) {
+  const task = tasksStore.tasks.find((t) => t._id === id);
+  if (task) await tasksStore.updateTask(id, { ...task, due_date });
 }
 
 async function handleOpenLinkedTask(taskId) {

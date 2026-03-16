@@ -44,10 +44,14 @@
         v-for="(cell, i) in calendarCells"
         :key="i"
         :class="[
-          'flex flex-col overflow-hidden p-1.5',
+          'flex flex-col overflow-hidden p-1.5 transition-colors',
           cell.day ? 'bg-white dark:bg-zinc-800' : 'bg-zinc-50/80 dark:bg-zinc-800/50',
           cell.isToday ? 'bg-brand-50 dark:bg-brand-950/30' : '',
+          cell.day && dropTarget === cell.day ? 'ring-2 ring-inset ring-brand-500 bg-brand-50 dark:bg-brand-950/40' : '',
         ]"
+        @dragover.prevent="cell.day ? onDragOver(cell.day) : null"
+        @dragleave="onDragLeave"
+        @drop.prevent="cell.day ? onDrop(cell.day) : null"
       >
         <template v-if="cell.day">
           <span
@@ -65,9 +69,12 @@
             <button
               v-for="task in cell.tasks"
               :key="task._id"
+              draggable="true"
+              @dragstart="onDragStart(task, $event)"
+              @dragend="onDragEnd"
               @click="$emit('edit', task)"
               :class="[
-                'text-left text-xs px-1.5 py-0.5 rounded-md truncate w-full transition-colors',
+                'text-left text-xs px-1.5 py-0.5 rounded-md truncate w-full transition-colors cursor-grab active:cursor-grabbing',
                 taskChipClass(task),
                 isDoneStatus(task.status) ? 'line-through' : '',
               ]"
@@ -88,8 +95,11 @@
         <button
           v-for="task in undatedTasks"
           :key="task._id"
+          draggable="true"
+          @dragstart="onDragStart(task, $event)"
+          @dragend="onDragEnd"
           @click="$emit('edit', task)"
-          :class="['text-xs px-2.5 py-1 rounded-full transition-colors', taskChipClass(task), isDoneStatus(task.status) ? 'line-through' : '']"
+          :class="['text-xs px-2.5 py-1 rounded-full transition-colors cursor-grab active:cursor-grabbing', taskChipClass(task), isDoneStatus(task.status) ? 'line-through' : '']"
           :style="taskChipStyle(task)"
         >
           {{ task.title }}
@@ -108,7 +118,7 @@ const props = defineProps({
   statuses: { type: Array, default: () => [] },
 });
 
-defineEmits(['edit', 'add']);
+const emit = defineEmits(['edit', 'add', 'due-date-change']);
 
 const doneStatusIds = inject('doneStatusIds', computed(() => new Set(['done'])));
 
@@ -195,5 +205,42 @@ function taskChipStyle(task) {
   const st = statusMap.value[task.status];
   if (!st) return {};
   return { backgroundColor: st.color + '22', color: st.color };
+}
+
+// --- Drag and drop ---
+const draggedTask = ref(null);
+const dropTarget = ref(null);
+
+function onDragStart(task, event) {
+  draggedTask.value = task;
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', task._id);
+}
+
+function onDragEnd() {
+  draggedTask.value = null;
+  dropTarget.value = null;
+}
+
+function onDragOver(day) {
+  dropTarget.value = day;
+}
+
+function onDragLeave() {
+  dropTarget.value = null;
+}
+
+function onDrop(day) {
+  dropTarget.value = null;
+  if (!draggedTask.value) return;
+  const m = String(month.value + 1).padStart(2, '0');
+  const d = String(day).padStart(2, '0');
+  const newDueDate = `${year.value}-${m}-${d}`;
+  // Don't emit if the date hasn't changed
+  const currentDate = draggedTask.value.due_date?.split('T')[0];
+  if (currentDate !== newDueDate) {
+    emit('due-date-change', { id: draggedTask.value._id, due_date: newDueDate });
+  }
+  draggedTask.value = null;
 }
 </script>
