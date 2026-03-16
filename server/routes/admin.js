@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const { getUsersDb, getSettingsDb, getSetting, setSetting } = require('../config/couch');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { wrapEmail } = require('../utils/emailTemplate');
 
 const router = express.Router();
 const SALT_ROUNDS = 12;
@@ -154,7 +155,22 @@ router.post('/invite-tokens', async (req, res) => {
           to: email,
           subject: 'You\'ve been invited to TaskFlow',
           text: `You've been invited to create an account on TaskFlow.\n\nClick the link below to register:\n${link}\n\nThis invitation expires in 7 days.`,
-          html: `<p>You've been invited to create an account on <strong>TaskFlow</strong>.</p><p><a href="${link}">Click here to register</a></p><p>This invitation expires in 7 days.</p>`,
+          html: wrapEmail({
+            title: 'You\'ve been invited to TaskFlow',
+            body: `
+              <h2 style="margin:0 0 16px;font-size:18px;font-weight:600;color:#111827;">You're invited!</h2>
+              <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">You've been invited to create an account on <strong>TaskFlow</strong>.</p>
+              <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;">Click the button below to get started:</p>
+              <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+                <tr>
+                  <td style="border-radius:6px;background-color:#4f46e5;">
+                    <a href="${link}" style="display:inline-block;padding:12px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">Create Your Account</a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.5;">This invitation expires in 7 days. If you didn't expect this email, you can safely ignore it.</p>
+            `,
+          }),
         });
       }
     } catch (emailErr) {
@@ -282,9 +298,16 @@ router.post('/email-settings/test', async (req, res) => {
     await transporter.sendMail({
       from: from || user || 'noreply@localhost',
       to,
-      subject: 'Test Email — Todo App',
-      text: 'This is a test email from your Todo application. If you received this, your email settings are configured correctly!',
-      html: '<p>This is a test email from your <strong>Todo</strong> application.</p><p>If you received this, your email settings are configured correctly!</p>',
+      subject: 'Test Email — TaskFlow',
+      text: 'This is a test email from your TaskFlow application. If you received this, your email settings are configured correctly!',
+      html: wrapEmail({
+        title: 'Test Email — TaskFlow',
+        body: `
+          <h2 style="margin:0 0 16px;font-size:18px;font-weight:600;color:#111827;">Email Configuration Test</h2>
+          <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">This is a test email from your <strong>TaskFlow</strong> application.</p>
+          <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">If you received this, your email settings are configured correctly &#10003;</p>
+        `,
+      }),
     });
 
     res.json({ message: 'Test email sent successfully' });
