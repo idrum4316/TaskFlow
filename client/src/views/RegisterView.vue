@@ -90,6 +90,8 @@
               autocomplete="email"
               class="input"
               placeholder="you@example.com"
+              :readonly="!!inviteEmail"
+              :class="{ 'bg-zinc-100 dark:bg-zinc-700/50 cursor-not-allowed': !!inviteEmail }"
             />
           </div>
 
@@ -161,6 +163,7 @@ const registrationEnabled = ref(true);
 const checkingStatus = ref(true);
 const inviteToken = ref(route.query.token || '');
 const validToken = ref(false);
+const inviteEmail = ref('');
 const year = computed(() => new Date().getFullYear());
 
 onMounted(async () => {
@@ -169,6 +172,10 @@ onMounted(async () => {
     const { data } = await api.get('/auth/registration-status', params);
     registrationEnabled.value = data.registration_enabled;
     validToken.value = !!data.valid_token;
+    if (data.invite_email) {
+      inviteEmail.value = data.invite_email;
+      email.value = data.invite_email;
+    }
   } catch {
     registrationEnabled.value = true;
   } finally {

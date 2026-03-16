@@ -51,6 +51,12 @@ router.post('/register', async (req, res) => {
         if (!inviteDoc || inviteDoc.type !== 'invite_token' || inviteDoc.used) {
           return res.status(403).json({ error: 'Invalid or already used invitation token' });
         }
+        if (inviteDoc.expires_at && new Date(inviteDoc.expires_at) < new Date()) {
+          return res.status(403).json({ error: 'This invitation has expired' });
+        }
+        if (inviteDoc.email && inviteDoc.email !== email) {
+          return res.status(403).json({ error: 'This invitation was sent to a different email address' });
+        }
       } catch (err) {
         if (err.statusCode === 404) {
           return res.status(403).json({ error: 'Invalid or already used invitation token' });
@@ -118,7 +124,11 @@ router.get('/registration-status', async (req, res) => {
       try {
         const settingsDb = getSettingsDb();
         const doc = await settingsDb.get(`invite_${token}`);
-        result.valid_token = !!(doc && doc.type === 'invite_token' && !doc.used);
+        const notExpired = !doc.expires_at || new Date(doc.expires_at) >= new Date();
+        result.valid_token = !!(doc && doc.type === 'invite_token' && !doc.used && notExpired);
+        if (result.valid_token && doc.email) {
+          result.invite_email = doc.email;
+        }
       } catch {
         result.valid_token = false;
       }

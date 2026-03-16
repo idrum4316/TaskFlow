@@ -112,29 +112,46 @@
     <section class="mb-10">
       <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Invitation Links</h3>
       <div class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl p-5">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Single-use invite links</p>
-            <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-              Generate links that allow one person to register, even when registration is disabled
-            </p>
-          </div>
-          <button
-            @click="handleCreateInvite"
-            :disabled="creatingInvite"
-            class="btn-primary text-xs !py-1.5 !px-3"
-          >
-            {{ creatingInvite ? 'Generating…' : 'Generate link' }}
-          </button>
+        <div class="mb-4">
+          <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Email invitation links</p>
+          <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+            Send a single-use registration link to an email address. Links expire after 7 days.
+          </p>
         </div>
 
-        <!-- Copied confirmation -->
+        <form @submit.prevent="handleCreateInvite" class="flex gap-2 mb-4">
+          <input
+            v-model="inviteEmail"
+            type="email"
+            placeholder="recipient@example.com"
+            required
+            class="flex-1 text-sm border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
+            :disabled="creatingInvite"
+          />
+          <button
+            type="submit"
+            :disabled="creatingInvite || !inviteEmail.trim()"
+            class="btn-primary text-xs !py-1.5 !px-3"
+          >
+            {{ creatingInvite ? 'Sending…' : 'Send invite' }}
+          </button>
+        </form>
+
+        <!-- Sent confirmation -->
         <div
-          v-if="copiedToken"
+          v-if="inviteSent"
           role="status"
           class="flex items-start gap-2 text-sm text-green-700 bg-green-50 border border-green-200 px-3 py-2.5 rounded-lg dark:text-green-400 dark:bg-green-950/30 dark:border-green-800 mb-4"
         >
-          Link copied to clipboard!
+          Invitation sent!
+        </div>
+
+        <div
+          v-if="inviteError"
+          role="alert"
+          class="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2.5 rounded-lg dark:text-red-400 dark:bg-red-950/30 dark:border-red-800 mb-4"
+        >
+          {{ inviteError }}
         </div>
 
         <!-- Token list -->
@@ -146,12 +163,18 @@
           >
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2">
-                <code class="text-xs text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-700 px-2 py-0.5 rounded font-mono truncate max-w-[200px]">{{ t.token }}</code>
+                <span class="text-sm text-zinc-700 dark:text-zinc-300 truncate">{{ t.email }}</span>
                 <span
                   v-if="t.used"
                   class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
                 >
                   Used
+                </span>
+                <span
+                  v-else-if="isExpired(t)"
+                  class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                >
+                  Expired
                 </span>
                 <span
                   v-else
@@ -161,19 +184,12 @@
                 </span>
               </div>
               <p class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">
-                Created {{ formatDate(t.created_at) }}
+                Sent {{ formatDate(t.created_at) }}
+                <template v-if="t.expires_at"> · Expires {{ formatDate(t.expires_at) }}</template>
                 <template v-if="t.used_at"> · Used {{ formatDate(t.used_at) }}</template>
               </p>
             </div>
             <div class="flex items-center gap-1.5 flex-shrink-0">
-              <button
-                v-if="!t.used"
-                @click="copyInviteLink(t.token)"
-                class="text-xs font-medium px-2.5 py-1.5 rounded-lg text-zinc-600 bg-zinc-100 hover:bg-zinc-200 dark:text-zinc-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 transition-colors"
-                title="Copy link"
-              >
-                Copy link
-              </button>
               <button
                 @click="handleRevokeInvite(t.token)"
                 class="text-xs font-medium px-2.5 py-1.5 rounded-lg text-red-600 bg-red-50 hover:bg-red-100 dark:text-red-400 dark:bg-red-950/30 dark:hover:bg-red-900/40 transition-colors"
@@ -184,7 +200,7 @@
             </div>
           </div>
         </div>
-        <p v-else class="text-sm text-zinc-400 dark:text-zinc-500">No invitation links generated yet.</p>
+        <p v-else class="text-sm text-zinc-400 dark:text-zinc-500">No invitation links sent yet.</p>
       </div>
     </section>
 
@@ -359,7 +375,9 @@ const adminStore = useAdminStore();
 const authStore = useAuthStore();
 const settingsLoading = ref(false);
 const creatingInvite = ref(false);
-const copiedToken = ref(false);
+const inviteEmail = ref('');
+const inviteSent = ref(false);
+const inviteError = ref(null);
 
 const emailForm = reactive({
   smtp_host: '',
@@ -413,24 +431,25 @@ async function handleToggleAdmin(user) {
 }
 
 async function handleCreateInvite() {
+  if (!inviteEmail.value.trim()) return;
   creatingInvite.value = true;
+  inviteError.value = null;
+  inviteSent.value = false;
   try {
-    const { token } = await adminStore.createInviteToken();
-    await copyInviteLink(token);
+    await adminStore.createInviteToken(inviteEmail.value.trim());
+    inviteEmail.value = '';
+    inviteSent.value = true;
+    setTimeout(() => { inviteSent.value = false; }, 3000);
+  } catch (err) {
+    inviteError.value = err.response?.data?.error || 'Failed to send invitation';
   } finally {
     creatingInvite.value = false;
   }
 }
 
-async function copyInviteLink(token) {
-  const link = `${window.location.origin}/register?token=${token}`;
-  try {
-    await navigator.clipboard.writeText(link);
-    copiedToken.value = true;
-    setTimeout(() => { copiedToken.value = false; }, 3000);
-  } catch {
-    // Fallback: select the token text for manual copy
-  }
+function isExpired(t) {
+  if (!t.expires_at) return false;
+  return new Date(t.expires_at) < new Date();
 }
 
 async function handleRevokeInvite(token) {

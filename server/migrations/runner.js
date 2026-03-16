@@ -1,4 +1,4 @@
-const { getMigrationsDb, getUsersDb, getTasksDb, getBoardsDb } = require('../config/couch');
+const { getMigrationsDb, getUsersDb, getTasksDb, getBoardsDb, getSettingsDb } = require('../config/couch');
 
 // Register migrations in order here
 const migrations = [
@@ -6,11 +6,12 @@ const migrations = [
   require('./002_add_admin_field'),
   require('./003_add_board_statuses'),
   require('./004_add_board_labels'),
+  require('./005_drop_old_invite_tokens'),
 ];
 
 async function runMigrations() {
   const db = getMigrationsDb();
-  const context = { getUsersDb, getTasksDb, getBoardsDb };
+  const context = { getUsersDb, getTasksDb, getBoardsDb, getSettingsDb };
 
   for (const migration of migrations) {
     try {

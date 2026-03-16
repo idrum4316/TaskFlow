@@ -105,20 +105,64 @@ router.put('/settings', async (req, res) => {
   }
 });
 
-// POST /api/admin/invite-tokens — generate a single-use invitation token
+// POST /api/admin/invite-tokens — generate a single-use invitation token and email it
 router.post('/invite-tokens', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'email is required' });
+
   try {
     const db = getSettingsDb();
     const token = crypto.randomUUID();
+    const created_at = new Date().toISOString();
+    const expires_at = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     await db.insert({
       _id: `invite_${token}`,
       type: 'invite_token',
       token,
+      email,
       created_by: req.user.sub,
-      created_at: new Date().toISOString(),
+      created_at,
+      expires_at,
       used: false,
     });
-    res.status(201).json({ token, created_at: new Date().toISOString() });
+
+    // Build the invitation link
+    const origin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+    const link = `${origin}/register?token=${token}`;
+
+    // Send the invitation email
+    try {
+      const host = await getSetting('smtp_host');
+      const port = await getSetting('smtp_port');
+      const secure = await getSetting('smtp_secure');
+      const user = await getSetting('smtp_user');
+      const pass = await getSetting('smtp_pass');
+      const from = await getSetting('email_from');
+
+      if (host && port) {
+        const transportConfig = {
+          host,
+          port: Number(port),
+          secure: secure === true || secure === 'true',
+        };
+        if (user && pass) {
+          transportConfig.auth = { user, pass };
+        }
+        const transporter = nodemailer.createTransport(transportConfig);
+        await transporter.sendMail({
+          from: from || user || 'noreply@localhost',
+          to: email,
+          subject: 'You\'ve been invited to TaskFlow',
+          text: `You've been invited to create an account on TaskFlow.\n\nClick the link below to register:\n${link}\n\nThis invitation expires in 7 days.`,
+          html: `<p>You've been invited to create an account on <strong>TaskFlow</strong>.</p><p><a href="${link}">Click here to register</a></p><p>This invitation expires in 7 days.</p>`,
+        });
+      }
+    } catch (emailErr) {
+      console.error('Failed to send invitation email:', emailErr.message);
+      // Token was still created — don't fail the request
+    }
+
+    res.status(201).json({ token, email, created_at, expires_at });
   } catch {
     res.status(500).json({ error: 'Failed to create invitation token' });
   }
@@ -130,7 +174,7 @@ router.get('/invite-tokens', async (_req, res) => {
     const db = getSettingsDb();
     const { docs } = await db.find({
       selector: { type: 'invite_token' },
-      fields: ['token', 'created_at', 'created_by', 'used', 'used_at', 'used_by'],
+      fields: ['token', 'email', 'created_at', 'expires_at', 'created_by', 'used', 'used_at', 'used_by'],
       limit: 10000,
     });
     res.json(docs);

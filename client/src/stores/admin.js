@@ -47,8 +47,8 @@ export const useAdminStore = defineStore('admin', () => {
     inviteTokens.value = data;
   }
 
-  async function createInviteToken() {
-    const { data } = await api.post('/admin/invite-tokens');
+  async function createInviteToken(email) {
+    const { data } = await api.post('/admin/invite-tokens', { email });
     inviteTokens.value.unshift({ ...data, used: false });
     return data;
   }
