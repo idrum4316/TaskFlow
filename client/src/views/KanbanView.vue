@@ -57,6 +57,7 @@
       :default-status="defaultStatus"
       :statuses="boardStatuses"
       @save="handleSave"
+      @auto-save="handleAutoSave"
       @close="closeForm"
       @open-task="handleOpenLinkedTask"
     />
@@ -146,6 +147,13 @@ async function handleSave(payload) {
     await tasksStore.createTask({ ...payload, board_id: boardId.value });
   }
   closeForm();
+}
+
+async function handleAutoSave(payload) {
+  if (editingTask.value) {
+    const updated = await tasksStore.updateTask(editingTask.value._id, payload);
+    if (updated) editingTask.value = updated;
+  }
 }
 
 async function handleDelete(id) {
