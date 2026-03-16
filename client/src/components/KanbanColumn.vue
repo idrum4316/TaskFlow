@@ -1,7 +1,7 @@
 <template>
-  <div class="flex flex-col w-80 flex-shrink-0">
+  <div class="flex flex-col w-80 flex-shrink-0 min-h-0">
     <!-- Column header -->
-    <div class="flex items-center justify-between px-3 py-2 mb-2">
+    <div class="flex items-center justify-between px-3 py-2 mb-2 flex-shrink-0">
       <div class="flex items-center gap-2">
         <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: color }" aria-hidden="true" />
         <h3 class="font-semibold text-sm text-zinc-700 dark:text-zinc-300 tracking-wide uppercase">{{ title }}</h3>
@@ -23,7 +23,7 @@
 
     <!-- Cards container -->
     <div
-      :class="['flex flex-col gap-2.5 p-1.5 rounded-xl min-h-32 flex-1 transition-all duration-200', dragOver ? 'bg-brand-50/60 dark:bg-brand-900/20 ring-2 ring-brand-400/50 ring-inset' : 'bg-transparent']"
+      :class="['flex flex-col gap-2.5 p-1.5 rounded-xl flex-1 min-h-0 overflow-y-auto transition-all duration-200', dragOver ? 'bg-brand-50/60 dark:bg-brand-900/20 ring-2 ring-brand-400/50 ring-inset' : 'bg-transparent']"
       @dragover.prevent="dragOver = true"
       @dragleave="onDragLeave"
       @drop="onDrop"

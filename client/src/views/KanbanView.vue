@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-[calc(100vh-3.5rem)] bg-zinc-50 dark:bg-zinc-900">
+  <div class="flex flex-col h-full bg-zinc-50 dark:bg-zinc-900">
     <!-- Board header -->
     <div class="flex items-center gap-3 px-6 py-3 bg-white dark:bg-zinc-800/80 border-b border-zinc-200 dark:border-zinc-700/60 flex-shrink-0 backdrop-blur-sm">
       <RouterLink to="/" class="inline-flex items-center gap-1.5 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors text-sm group">
@@ -33,7 +33,7 @@
     </div>
 
     <!-- Kanban columns -->
-    <div v-else class="flex gap-5 p-5 overflow-x-auto flex-1 items-start scroll-smooth">
+    <div v-else class="flex gap-5 p-5 overflow-x-auto flex-1 min-h-0 overflow-y-hidden scroll-smooth">
       <KanbanColumn
         v-for="col in columns"
         :key="col.status"

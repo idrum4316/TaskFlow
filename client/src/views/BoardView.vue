@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-[calc(100vh-3.5rem)]">
+  <div class="flex flex-col h-full">
     <!-- Board sub-header -->
     <div class="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-700 flex-shrink-0">
       <!-- Row 1: breadcrumb + board name + actions -->
