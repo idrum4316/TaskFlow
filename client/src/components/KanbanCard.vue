@@ -3,8 +3,9 @@
     draggable="true"
     @dragstart="onDragStart"
     @dragend="dragging = false"
+    @touchstart="onTouchStart"
     class="bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200/80 dark:border-zinc-700/80 hover:border-zinc-300 dark:hover:border-zinc-600 transition-all duration-150 cursor-grab active:cursor-grabbing group shadow-sm hover:shadow-md focus-within:ring-2 focus-within:ring-brand-500 focus-within:ring-offset-1 dark:focus-within:ring-offset-zinc-900"
-    :class="{ 'opacity-50': isDone, 'opacity-40 scale-[0.97]': dragging }"
+    :class="{ 'opacity-50': isDone, 'opacity-40 scale-[0.97]': dragging || touchDragging }"
   >
     <div class="p-3">
       <!-- Priority accent + Title -->
@@ -112,11 +113,18 @@
 
 <script setup>
 import { computed, ref, inject } from 'vue';
+import { startTouchDrag, touchDragState } from '@/composables/useTouchDragDrop';
 
 const props = defineProps({
   task: { type: Object, required: true },
 });
 defineEmits(['edit', 'delete', 'status-change']);
+
+const touchDragging = computed(() => touchDragState.dragging && touchDragState.taskId === props.task._id);
+
+function onTouchStart(e) {
+  startTouchDrag(e, props.task._id);
+}
 
 const doneStatusIds = inject('doneStatusIds', computed(() => new Set(['done'])));
 const isDone = computed(() => doneStatusIds.value.has(props.task.status));

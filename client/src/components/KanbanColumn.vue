@@ -23,7 +23,8 @@
 
     <!-- Cards container -->
     <div
-      :class="['flex flex-col gap-2.5 p-1.5 rounded-xl flex-1 min-h-0 overflow-y-auto transition-all duration-200', dragOver ? 'bg-brand-50/60 dark:bg-brand-900/20 ring-2 ring-brand-400/50 ring-inset' : 'bg-transparent']"
+      :data-drop-status="status"
+      :class="['flex flex-col gap-2.5 p-1.5 rounded-xl flex-1 min-h-0 overflow-y-auto transition-all duration-200', isHighlighted ? 'bg-brand-50/60 dark:bg-brand-900/20 ring-2 ring-brand-400/50 ring-inset' : 'bg-transparent']"
       @dragover.prevent="dragOver = true"
       @dragleave="onDragLeave"
       @drop="onDrop"
@@ -54,8 +55,9 @@
 </template>
 
 <script setup>
-import { ref, inject } from 'vue';
+import { ref, computed, inject } from 'vue';
 import KanbanCard from './KanbanCard.vue';
+import { touchDragState } from '@/composables/useTouchDragDrop';
 
 const canEdit = inject('canEdit', true);
 
@@ -70,6 +72,8 @@ const props = defineProps({
 const emit = defineEmits(['add', 'edit', 'delete', 'status-change']);
 
 const dragOver = ref(false);
+const touchHover = computed(() => touchDragState.dragging && touchDragState.hoverStatus === props.status);
+const isHighlighted = computed(() => dragOver.value || touchHover.value);
 
 function onDragLeave(e) {
   if (!e.currentTarget.contains(e.relatedTarget)) dragOver.value = false;

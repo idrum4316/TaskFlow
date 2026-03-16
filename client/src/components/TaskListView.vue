@@ -1,5 +1,5 @@
 <template>
-  <div class="px-3 sm:px-6 py-4 sm:py-5 overflow-y-auto flex-1">
+  <div data-drag-scroll class="px-3 sm:px-6 py-4 sm:py-5 overflow-y-auto flex-1">
     <!-- Loading skeleton -->
     <div v-if="loading && !tasks.length" class="space-y-1" aria-busy="true" aria-label="Loading tasks">
       <div v-for="i in 5" :key="i" class="h-14 rounded-xl bg-zinc-200/60 dark:bg-zinc-700/60 animate-pulse" aria-hidden="true" />
@@ -46,8 +46,9 @@
         <ul
           v-if="!collapsed[group.status]"
           :id="`group-${group.status}`"
+          :data-drop-status="group.status"
           class="space-y-1 rounded-xl transition-colors"
-          :class="dropTarget === group.status ? 'ring-2 ring-brand-400 bg-brand-50/40 dark:bg-brand-900/20' : ''"
+          :class="isGroupHighlighted(group.status) ? 'ring-2 ring-brand-400 bg-brand-50/40 dark:bg-brand-900/20' : ''"
           role="list"
           @dragover.prevent="dropTarget = group.status"
           @dragleave="onListDragLeave"
@@ -56,7 +57,7 @@
           <li
             v-if="group.tasks.length === 0"
             class="flex items-center justify-center gap-2 py-6 rounded-xl border-2 border-dashed transition-colors"
-            :class="dropTarget === group.status
+            :class="isGroupHighlighted(group.status)
               ? 'border-brand-300 bg-brand-50/60 dark:bg-brand-900/30 text-brand-400'
               : 'border-zinc-200 dark:border-zinc-700 text-zinc-300 dark:text-zinc-600'"
             aria-hidden="true"
@@ -73,8 +74,9 @@
             draggable="true"
             @dragstart="onListDragStart($event, task._id)"
             @dragend="draggingId = null"
+            @touchstart="onListTouchStart($event, task._id)"
             class="flex items-center gap-3 bg-white dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700 rounded-xl px-4 py-3 hover:border-zinc-300 dark:hover:border-zinc-600 hover:shadow-card transition-all duration-150 group/row cursor-grab active:cursor-grabbing"
-            :class="draggingId === task._id ? 'opacity-40' : ''"
+            :class="isItemDragging(task._id) ? 'opacity-40' : ''"
           >
             <!-- Priority bar -->
             <div :class="['w-1 h-8 rounded-full flex-shrink-0', priorityBar(task.priority)]" aria-hidden="true" />
@@ -145,6 +147,7 @@
 
 <script setup>
 import { computed, reactive, ref, inject } from 'vue';
+import { startTouchDrag, touchDragState, useTouchDropHandler } from '@/composables/useTouchDragDrop';
 
 const canEdit = inject('canEdit', true);
 const doneStatusIds = inject('doneStatusIds', computed(() => new Set(['done'])));
@@ -179,6 +182,20 @@ const statusMap = computed(() => {
 
 const draggingId = ref(null);
 const dropTarget = ref(null);
+
+useTouchDropHandler((payload) => emit('status-change', payload));
+
+function isGroupHighlighted(status) {
+  return dropTarget.value === status || (touchDragState.dragging && touchDragState.hoverStatus === status);
+}
+
+function isItemDragging(taskId) {
+  return draggingId.value === taskId || (touchDragState.dragging && touchDragState.taskId === taskId);
+}
+
+function onListTouchStart(e, taskId) {
+  startTouchDrag(e, taskId);
+}
 
 function onListDragStart(e, taskId) {
   draggingId.value = taskId;

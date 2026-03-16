@@ -33,7 +33,7 @@
     </div>
 
     <!-- Kanban columns -->
-    <div v-else class="flex gap-5 p-5 overflow-x-auto flex-1 min-h-0 overflow-y-hidden scroll-smooth">
+    <div v-else data-drag-scroll class="flex gap-5 p-5 overflow-x-auto flex-1 min-h-0 overflow-y-hidden scroll-smooth">
       <KanbanColumn
         v-for="col in columns"
         :key="col.status"
@@ -71,6 +71,7 @@ import { useBoardsStore } from '@/stores/boards';
 import { useTasksStore } from '@/stores/tasks';
 import KanbanColumn from '@/components/KanbanColumn.vue';
 import TaskForm from '@/components/TaskForm.vue';
+import { useTouchDropHandler } from '@/composables/useTouchDragDrop';
 
 const route = useRoute();
 const boardsStore = useBoardsStore();
@@ -166,6 +167,8 @@ async function handleStatusChange({ id, status }) {
   const task = tasksStore.tasks.find((t) => t._id === id);
   if (task) await tasksStore.updateTask(id, { ...task, status });
 }
+
+useTouchDropHandler(handleStatusChange);
 
 async function handleOpenLinkedTask(taskId) {
   const task = tasksStore.tasks.find((t) => t._id === taskId);

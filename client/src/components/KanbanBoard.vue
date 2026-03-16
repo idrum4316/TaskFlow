@@ -1,5 +1,5 @@
 <template>
-  <div class="flex gap-3 sm:gap-5 p-3 sm:p-5 overflow-x-auto flex-1 min-h-0 overflow-y-hidden scroll-smooth">
+  <div data-drag-scroll class="flex gap-3 sm:gap-5 p-3 sm:p-5 overflow-x-auto flex-1 min-h-0 overflow-y-hidden scroll-smooth">
     <KanbanColumn
       v-for="col in columns"
       :key="col.status"
@@ -19,6 +19,7 @@
 <script setup>
 import { computed } from 'vue';
 import KanbanColumn from './KanbanColumn.vue';
+import { useTouchDropHandler } from '@/composables/useTouchDragDrop';
 
 const DEFAULT_STATUSES = [
   { id: 'todo', label: 'To Do', color: '#a1a1aa', done: false },
@@ -32,7 +33,9 @@ const props = defineProps({
   statuses: { type: Array, default: () => [] },
 });
 
-defineEmits(['add', 'edit', 'delete', 'status-change']);
+const emit = defineEmits(['add', 'edit', 'delete', 'status-change']);
+
+useTouchDropHandler((payload) => emit('status-change', payload));
 
 const columns = computed(() => {
   const s = props.statuses.length ? props.statuses : DEFAULT_STATUSES;
