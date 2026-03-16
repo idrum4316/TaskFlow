@@ -69,6 +69,7 @@
               :class="[
                 'text-left text-xs px-1.5 py-0.5 rounded-md truncate w-full transition-colors',
                 taskChipClass(task),
+                isDoneStatus(task.status) ? 'line-through' : '',
               ]"
               :style="taskChipStyle(task)"
               :title="task.title"
@@ -88,7 +89,7 @@
           v-for="task in undatedTasks"
           :key="task._id"
           @click="$emit('edit', task)"
-          :class="['text-xs px-2.5 py-1 rounded-full transition-colors', taskChipClass(task)]"
+          :class="['text-xs px-2.5 py-1 rounded-full transition-colors', taskChipClass(task), isDoneStatus(task.status) ? 'line-through' : '']"
           :style="taskChipStyle(task)"
         >
           {{ task.title }}
