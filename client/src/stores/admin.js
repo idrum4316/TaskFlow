@@ -7,6 +7,7 @@ export const useAdminStore = defineStore('admin', () => {
   const settings = ref({ registration_enabled: true });
   const loading = ref(false);
   const inviteTokens = ref([]);
+  const emailSettings = ref({ smtp_host: '', smtp_port: '', smtp_secure: false, smtp_user: '', smtp_pass: '', email_from: '' });
 
   async function fetchUsers() {
     loading.value = true;
@@ -57,9 +58,26 @@ export const useAdminStore = defineStore('admin', () => {
     inviteTokens.value = inviteTokens.value.filter((t) => t.token !== token);
   }
 
+  async function fetchEmailSettings() {
+    const { data } = await api.get('/admin/email-settings');
+    emailSettings.value = data;
+  }
+
+  async function updateEmailSettings(patch) {
+    const { data } = await api.put('/admin/email-settings', patch);
+    emailSettings.value = data;
+    return data;
+  }
+
+  async function sendTestEmail(to) {
+    const { data } = await api.post('/admin/email-settings/test', { to });
+    return data;
+  }
+
   return {
-    users, settings, loading, inviteTokens,
+    users, settings, loading, inviteTokens, emailSettings,
     fetchUsers, resetPassword, toggleAdmin, fetchSettings, updateSettings,
     fetchInviteTokens, createInviteToken, revokeInviteToken,
+    fetchEmailSettings, updateEmailSettings, sendTestEmail,
   };
 });

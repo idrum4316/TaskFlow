@@ -1,6 +1,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
+const nodemailer = require('nodemailer');
 const { getUsersDb, getSettingsDb, getSetting, setSetting } = require('../config/couch');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 
@@ -153,6 +154,101 @@ router.delete('/invite-tokens/:token', async (req, res) => {
       return res.status(404).json({ error: 'Token not found' });
     }
     res.status(500).json({ error: 'Failed to revoke token' });
+  }
+});
+
+const EMAIL_SETTING_KEYS = ['smtp_host', 'smtp_port', 'smtp_secure', 'smtp_user', 'smtp_pass', 'email_from'];
+
+// GET /api/admin/email-settings — get email/SMTP settings
+router.get('/email-settings', async (_req, res) => {
+  try {
+    const result = {};
+    for (const key of EMAIL_SETTING_KEYS) {
+      const val = await getSetting(key);
+      // Mask the password — only indicate whether it's set
+      if (key === 'smtp_pass') {
+        result[key] = val ? '••••••••' : '';
+      } else {
+        result[key] = val ?? '';
+      }
+    }
+    res.json(result);
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch email settings' });
+  }
+});
+
+// PUT /api/admin/email-settings — update email/SMTP settings
+router.put('/email-settings', async (req, res) => {
+  try {
+    for (const key of EMAIL_SETTING_KEYS) {
+      if (key in req.body) {
+        // Don't overwrite password with the mask placeholder
+        if (key === 'smtp_pass' && req.body[key] === '••••••••') continue;
+        await setSetting(key, req.body[key]);
+      }
+    }
+    // Return current settings (masked)
+    const result = {};
+    for (const key of EMAIL_SETTING_KEYS) {
+      const val = await getSetting(key);
+      if (key === 'smtp_pass') {
+        result[key] = val ? '••••••••' : '';
+      } else {
+        result[key] = val ?? '';
+      }
+    }
+    res.json(result);
+  } catch {
+    res.status(500).json({ error: 'Failed to update email settings' });
+  }
+});
+
+// POST /api/admin/email-settings/test — send a test email
+router.post('/email-settings/test', async (req, res) => {
+  try {
+    const { to } = req.body;
+    if (!to) {
+      return res.status(400).json({ error: 'Recipient email address is required' });
+    }
+
+    const host = await getSetting('smtp_host');
+    const port = await getSetting('smtp_port');
+    const secure = await getSetting('smtp_secure');
+    const user = await getSetting('smtp_user');
+    const pass = await getSetting('smtp_pass');
+    const from = await getSetting('email_from');
+
+    if (!host || !port) {
+      return res.status(400).json({ error: 'SMTP host and port must be configured first' });
+    }
+
+    const transportConfig = {
+      host,
+      port: Number(port),
+      secure: secure === true || secure === 'true',
+    };
+
+    if (user && pass) {
+      transportConfig.auth = { user, pass };
+    }
+
+    const transporter = nodemailer.createTransport(transportConfig);
+
+    await transporter.sendMail({
+      from: from || user || 'noreply@localhost',
+      to,
+      subject: 'Test Email — Todo App',
+      text: 'This is a test email from your Todo application. If you received this, your email settings are configured correctly!',
+      html: '<p>This is a test email from your <strong>Todo</strong> application.</p><p>If you received this, your email settings are configured correctly!</p>',
+    });
+
+    res.json({ message: 'Test email sent successfully' });
+  } catch (err) {
+    const detail = err.responseCode
+      ? `SMTP error ${err.responseCode}: ${err.response}`
+      : err.message;
+    res.status(500).json({ error: `Failed to send test email: ${detail}` });
   }
 });
 
