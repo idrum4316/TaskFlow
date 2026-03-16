@@ -59,4 +59,17 @@ router.beforeEach((to) => {
   }
 });
 
+// After a new deployment, old lazy-loaded chunk files no longer exist on the
+// server.  The catch-all returns index.html (text/html) instead, which the
+// browser rejects as a non-JS MIME type.  Detect this and do a full reload so
+// the browser fetches the updated index.html with the correct asset references.
+router.onError((error, to) => {
+  if (
+    error.message.includes('Failed to fetch dynamically imported module') ||
+    error.message.includes('Importing a module script failed')
+  ) {
+    window.location.assign(to.fullPath);
+  }
+});
+
 export default router;
