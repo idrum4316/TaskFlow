@@ -5,6 +5,7 @@ import { useTasksStore } from '@/stores/tasks';
 export function useBoardEvents(boardId) {
   let eventSource = null;
   const connected = ref(false);
+  let wasConnected = false;
 
   function connect(id) {
     disconnect();
@@ -17,7 +18,17 @@ export function useBoardEvents(boardId) {
     eventSource = new EventSource(url);
 
     eventSource.addEventListener('connected', () => {
+      const reconnected = wasConnected;
       connected.value = true;
+      wasConnected = true;
+
+      // Refresh data on reconnect to catch events missed during downtime
+      if (reconnected) {
+        const tasksStore = useTasksStore();
+        const boardsStore = useBoardsStore();
+        tasksStore.fetchTasks(id);
+        boardsStore.fetchBoards();
+      }
     });
 
     eventSource.addEventListener('change', (e) => {
