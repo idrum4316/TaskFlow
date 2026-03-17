@@ -7,7 +7,14 @@
       <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-700 flex-shrink-0">
         <div>
           <h2 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">Manage Statuses</h2>
-          <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">Add, remove, or reorder columns</p>
+          <p class="text-xs mt-0.5">
+            <span v-if="saving" class="text-indigo-500 dark:text-indigo-400 inline-flex items-center gap-1">
+              <svg class="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" /><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+              Saving…
+            </span>
+            <span v-else-if="saved" class="text-emerald-500 dark:text-emerald-400">Saved</span>
+            <span v-else class="text-zinc-400 dark:text-zinc-500">Drag to reorder columns</span>
+          </p>
         </div>
         <button @click="$emit('close')" class="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" aria-label="Close">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -21,8 +28,21 @@
         <div
           v-for="(status, index) in localStatuses"
           :key="status.id"
-          class="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3"
+          draggable="true"
+          @dragstart="onDragStart(index, $event)"
+          @dragover.prevent="onDragOver(index)"
+          @dragend="onDragEnd"
+          @drop.prevent="onDrop(index)"
+          :class="['flex items-center gap-3 bg-zinc-50 dark:bg-zinc-800 border rounded-xl px-4 py-3 transition-all',
+            dragIndex === index ? 'opacity-40 scale-95 border-zinc-300 dark:border-zinc-600' :
+            dropTarget === index ? 'border-indigo-400 dark:border-indigo-500 ring-2 ring-indigo-400/20' :
+            'border-zinc-200 dark:border-zinc-700']"
         >
+          <!-- Drag handle -->
+          <div class="flex-shrink-0 cursor-grab active:cursor-grabbing text-zinc-300 dark:text-zinc-600 hover:text-zinc-400 dark:hover:text-zinc-500">
+            <svg class="w-4 h-4" viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="3" r="1.5"/><circle cx="11" cy="3" r="1.5"/><circle cx="5" cy="8" r="1.5"/><circle cx="11" cy="8" r="1.5"/><circle cx="5" cy="13" r="1.5"/><circle cx="11" cy="13" r="1.5"/></svg>
+          </div>
+
           <!-- Color picker -->
           <label class="flex-shrink-0 cursor-pointer">
             <input
@@ -55,26 +75,6 @@
             />
             <span class="text-[11px] font-medium" :class="status.done ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400 dark:text-zinc-500'">Done</span>
           </label>
-
-          <!-- Move buttons -->
-          <div class="flex flex-col gap-0.5 flex-shrink-0">
-            <button
-              :disabled="index === 0"
-              @click="moveUp(index)"
-              class="w-5 h-5 flex items-center justify-center rounded text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-600 transition-colors disabled:opacity-30 disabled:cursor-default"
-              aria-label="Move up"
-            >
-              <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" /></svg>
-            </button>
-            <button
-              :disabled="index === localStatuses.length - 1"
-              @click="moveDown(index)"
-              class="w-5 h-5 flex items-center justify-center rounded text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-600 transition-colors disabled:opacity-30 disabled:cursor-default"
-              aria-label="Move down"
-            >
-              <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
-            </button>
-          </div>
 
           <!-- Delete -->
           <button
@@ -136,47 +136,37 @@
         </Teleport>
       </div>
 
-      <!-- Footer -->
-      <div class="px-6 py-4 border-t border-zinc-200 dark:border-zinc-700 flex items-center gap-3 flex-shrink-0 bg-zinc-50 dark:bg-zinc-800/50">
-        <button type="button" @click="$emit('close')" class="btn-secondary">Cancel</button>
-        <button
-          type="button"
-          :disabled="saving || !isValid"
-          class="btn-primary flex-1"
-          @click="handleSave"
-        >
-          <svg v-if="saving" class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-          {{ saving ? 'Saving…' : 'Save statuses' }}
-        </button>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue';
+import { ref, computed, reactive, watch, onUnmounted } from 'vue';
 
 const props = defineProps({
   statuses: { type: Array, required: true },
   tasks: { type: Array, default: () => [] },
   boardId: { type: String, required: true },
   boardName: { type: String, required: true },
+  saveFn: { type: Function, required: true },
 });
 
-const emit = defineEmits(['close', 'save']);
+const emit = defineEmits(['close']);
 
 const saving = ref(false);
+const saved = ref(false);
 const localStatuses = reactive(props.statuses.map((s) => ({ ...s })));
-const originalIds = new Set(props.statuses.map((s) => s.id));
 
-// Track reassignments: statusId -> targetStatusId
 const reassignments = reactive({});
+const pendingDelete = ref(null);
 
-// Pending deletion that needs reassignment
-const pendingDelete = ref(null); // { index, statusId, label, taskCount }
+// Drag state
+const dragIndex = ref(null);
+const dropTarget = ref(null);
+
+// Auto-save timers
+let saveTimer = null;
+let savedTimer = null;
 
 const taskCountByStatus = computed(() => {
   const counts = {};
@@ -184,11 +174,6 @@ const taskCountByStatus = computed(() => {
     counts[t.status] = (counts[t.status] || 0) + 1;
   }
   return counts;
-});
-
-const removedStatusIds = computed(() => {
-  const currentIds = new Set(localStatuses.map((s) => s.id));
-  return [...originalIds].filter((id) => !currentIds.has(id));
 });
 
 const isValid = computed(() => {
@@ -200,6 +185,52 @@ const isValid = computed(() => {
     ids.add(s.id);
   }
   return true;
+});
+
+// Auto-save watcher
+watch(localStatuses, () => {
+  if (!isValid.value || pendingDelete.value) return;
+  scheduleSave();
+}, { deep: true });
+
+function scheduleSave(immediate = false) {
+  clearTimeout(saveTimer);
+  if (immediate) {
+    doSave();
+  } else {
+    saveTimer = setTimeout(doSave, 800);
+  }
+}
+
+async function doSave() {
+  if (!isValid.value || saving.value) return;
+  saving.value = true;
+  saved.value = false;
+  clearTimeout(savedTimer);
+  try {
+    await props.saveFn({
+      statuses: localStatuses.map((s) => ({ id: s.id, label: s.label.trim(), color: s.color, done: !!s.done })),
+      reassignments: { ...reassignments },
+    });
+    Object.keys(reassignments).forEach((k) => delete reassignments[k]);
+    saved.value = true;
+    savedTimer = setTimeout(() => { saved.value = false; }, 2000);
+  } finally {
+    saving.value = false;
+  }
+}
+
+onUnmounted(() => {
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    if (isValid.value && !saving.value) {
+      props.saveFn({
+        statuses: localStatuses.map((s) => ({ id: s.id, label: s.label.trim(), color: s.color, done: !!s.done })),
+        reassignments: { ...reassignments },
+      });
+    }
+  }
+  clearTimeout(savedTimer);
 });
 
 const COLORS = ['#a1a1aa', '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#14b8a6'];
@@ -230,7 +261,6 @@ function removeStatus(index) {
     localStatuses.splice(index, 1);
     delete reassignments[status.id];
   } else {
-    // Show reassignment picker
     pendingDelete.value = {
       index,
       statusId: status.id,
@@ -253,30 +283,31 @@ function cancelDelete() {
   pendingDelete.value = null;
 }
 
-function moveUp(index) {
-  if (index > 0) {
-    const item = localStatuses.splice(index, 1)[0];
-    localStatuses.splice(index - 1, 0, item);
-  }
+// Drag and drop
+function onDragStart(index, event) {
+  dragIndex.value = index;
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', '');
 }
 
-function moveDown(index) {
-  if (index < localStatuses.length - 1) {
-    const item = localStatuses.splice(index, 1)[0];
-    localStatuses.splice(index + 1, 0, item);
+function onDragOver(index) {
+  if (dragIndex.value === null || dragIndex.value === index) {
+    dropTarget.value = null;
+    return;
   }
+  dropTarget.value = index;
 }
 
-async function handleSave() {
-  if (!isValid.value) return;
-  saving.value = true;
-  try {
-    await emit('save', {
-      statuses: localStatuses.map((s) => ({ id: s.id, label: s.label.trim(), color: s.color, done: !!s.done })),
-      reassignments: { ...reassignments },
-    });
-  } catch {
-    saving.value = false;
-  }
+function onDrop(index) {
+  if (dragIndex.value === null || dragIndex.value === index) return;
+  const item = localStatuses.splice(dragIndex.value, 1)[0];
+  localStatuses.splice(index, 0, item);
+  dragIndex.value = null;
+  dropTarget.value = null;
+}
+
+function onDragEnd() {
+  dragIndex.value = null;
+  dropTarget.value = null;
 }
 </script>

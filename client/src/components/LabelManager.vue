@@ -7,7 +7,14 @@
       <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-700 flex-shrink-0">
         <div>
           <h2 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">Manage Labels</h2>
-          <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">Create labels to categorise tasks</p>
+          <p class="text-xs mt-0.5">
+            <span v-if="saving" class="text-indigo-500 dark:text-indigo-400 inline-flex items-center gap-1">
+              <svg class="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" /><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+              Saving…
+            </span>
+            <span v-else-if="saved" class="text-emerald-500 dark:text-emerald-400">Saved</span>
+            <span v-else class="text-zinc-400 dark:text-zinc-500">Create labels to categorise tasks</span>
+          </p>
         </div>
         <button @click="$emit('close')" class="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" aria-label="Close">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -91,39 +98,28 @@
         </button>
       </div>
 
-      <!-- Footer -->
-      <div class="px-6 py-4 border-t border-zinc-200 dark:border-zinc-700 flex items-center gap-3 flex-shrink-0 bg-zinc-50 dark:bg-zinc-800/50">
-        <button type="button" @click="$emit('close')" class="btn-secondary">Cancel</button>
-        <button
-          type="button"
-          :disabled="saving || !isValid"
-          class="btn-primary flex-1"
-          @click="handleSave"
-        >
-          <svg v-if="saving" class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-          {{ saving ? 'Saving…' : 'Save labels' }}
-        </button>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue';
+import { ref, computed, reactive, watch, onUnmounted } from 'vue';
 
 const props = defineProps({
   labels: { type: Array, default: () => [] },
   boardId: { type: String, required: true },
   boardName: { type: String, required: true },
+  saveFn: { type: Function, required: true },
 });
 
-const emit = defineEmits(['close', 'save']);
+const emit = defineEmits(['close']);
 
 const saving = ref(false);
+const saved = ref(false);
 const localLabels = reactive(props.labels.map((l) => ({ ...l })));
+
+let saveTimer = null;
+let savedTimer = null;
 
 const isValid = computed(() => {
   const ids = new Set();
@@ -133,6 +129,45 @@ const isValid = computed(() => {
     ids.add(l.id);
   }
   return true;
+});
+
+// Auto-save watcher
+watch(localLabels, () => {
+  if (!isValid.value) return;
+  scheduleSave();
+}, { deep: true });
+
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(doSave, 800);
+}
+
+async function doSave() {
+  if (!isValid.value || saving.value) return;
+  saving.value = true;
+  saved.value = false;
+  clearTimeout(savedTimer);
+  try {
+    await props.saveFn({
+      labels: localLabels.map((l) => ({ id: l.id, name: l.name.trim(), color: l.color })),
+    });
+    saved.value = true;
+    savedTimer = setTimeout(() => { saved.value = false; }, 2000);
+  } finally {
+    saving.value = false;
+  }
+}
+
+onUnmounted(() => {
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    if (isValid.value && !saving.value) {
+      props.saveFn({
+        labels: localLabels.map((l) => ({ id: l.id, name: l.name.trim(), color: l.color })),
+      });
+    }
+  }
+  clearTimeout(savedTimer);
 });
 
 const COLORS = ['#6366f1', '#ef4444', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#14b8a6', '#a1a1aa'];
@@ -168,18 +203,6 @@ function moveDown(index) {
   if (index < localLabels.length - 1) {
     const item = localLabels.splice(index, 1)[0];
     localLabels.splice(index + 1, 0, item);
-  }
-}
-
-async function handleSave() {
-  if (!isValid.value) return;
-  saving.value = true;
-  try {
-    await emit('save', {
-      labels: localLabels.map((l) => ({ id: l.id, name: l.name.trim(), color: l.color })),
-    });
-  } catch {
-    saving.value = false;
   }
 }
 </script>

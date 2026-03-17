@@ -252,7 +252,7 @@
       :tasks="tasksStore.tasks"
       :board-id="board._id"
       :board-name="board.name"
-      @save="handleSaveStatuses"
+      :save-fn="handleSaveStatuses"
       @close="showStatusManager = false"
     />
     <!-- Label manager drawer -->
@@ -261,7 +261,7 @@
       :labels="boardLabels"
       :board-id="board._id"
       :board-name="board.name"
-      @save="handleSaveLabels"
+      :save-fn="handleSaveLabels"
       @close="showLabelManager = false"
     />
   </div>
@@ -490,7 +490,6 @@ async function handleOpenLinkedTask(taskId) {
 }
 
 async function handleSaveStatuses({ statuses, reassignments }) {
-  // Reassign tasks from deleted statuses before saving
   const entries = Object.entries(reassignments || {});
   for (const [fromStatus, toStatus] of entries) {
     const affected = tasksStore.tasks.filter((t) => t.status === fromStatus);
@@ -499,11 +498,9 @@ async function handleSaveStatuses({ statuses, reassignments }) {
     }
   }
   await boardsStore.updateBoard(board.value._id, { name: board.value.name, statuses });
-  showStatusManager.value = false;
 }
 
 async function handleSaveLabels({ labels }) {
   await boardsStore.updateBoard(board.value._id, { name: board.value.name, labels });
-  showLabelManager.value = false;
 }
 </script>
