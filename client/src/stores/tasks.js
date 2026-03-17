@@ -22,7 +22,8 @@ export const useTasksStore = defineStore('tasks', () => {
 
   async function createTask(payload) {
     const { data } = await api.post('/tasks', payload);
-    tasks.value.push(data);
+    const exists = tasks.value.some((t) => t._id === data._id);
+    if (!exists) tasks.value.push(data);
     return data;
   }
 

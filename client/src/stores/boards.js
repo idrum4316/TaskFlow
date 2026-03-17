@@ -8,7 +8,7 @@ export const useBoardsStore = defineStore('boards', () => {
   const error = ref(null);
 
   async function fetchBoards() {
-    loading.value = true;
+    if (!boards.value.length) loading.value = true;
     error.value = null;
     try {
       const { data } = await api.get('/boards');
