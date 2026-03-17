@@ -10,11 +10,8 @@ module.exports = {
   async up({ getSettingsDb }) {
     const db = getSettingsDb();
 
-    const { docs } = await db.find({
-      selector: { type: 'invite_token' },
-      fields: ['_id', '_rev'],
-      limit: 10000,
-    });
+    const { rows } = await db.view('settings', 'invite_tokens', { include_docs: true });
+    const docs = rows.map(r => ({ _id: r.doc._id, _rev: r.doc._rev }));
 
     if (docs.length > 0) {
       const toDelete = docs.map((d) => ({ ...d, _deleted: true }));

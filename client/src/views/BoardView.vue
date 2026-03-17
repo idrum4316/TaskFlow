@@ -281,6 +281,7 @@ import ShareBoardModal from '@/components/ShareBoardModal.vue';
 import StatusManager from '@/components/StatusManager.vue';
 import LabelManager from '@/components/LabelManager.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
+import { useBoardEvents } from '@/composables/useBoardEvents';
 
 const route = useRoute();
 const router = useRouter();
@@ -290,6 +291,9 @@ const sharesStore = useSharesStore();
 
 const boardId = computed(() => route.params.id);
 const board = computed(() => boardsStore.boards.find((b) => b._id === boardId.value));
+
+// Real-time updates via CouchDB _changes feed (SSE)
+useBoardEvents(boardId);
 
 const isOwner = computed(() => board.value?._role === 'owner');
 const canEdit = computed(() => isOwner.value || board.value?._access === 'write');

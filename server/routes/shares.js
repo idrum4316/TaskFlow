@@ -43,8 +43,8 @@ router.post('/', async (req, res) => {
 
   let invitee;
   try {
-    const result = await getUsersDb().find({ selector: { email }, limit: 1 });
-    invitee = result.docs[0];
+    const result = await getUsersDb().view('users', 'by_email', { key: email, include_docs: true, limit: 1 });
+    invitee = result.rows[0]?.doc;
   } catch {
     return res.status(500).json({ error: 'Failed to look up user' });
   }

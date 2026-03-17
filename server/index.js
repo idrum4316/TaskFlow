@@ -16,6 +16,7 @@ const adminRoutes = require('./routes/admin');
 const accountRoutes = require('./routes/account');
 const attachmentRoutes = require('./routes/attachments');
 const linkRoutes = require('./routes/links');
+const eventRoutes = require('./routes/events');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -34,6 +35,7 @@ app.use('/api/tasks/:id/attachments', attachmentRoutes);
 app.use('/api/tasks/:id/links', linkRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/account', accountRoutes);
+app.use('/api/events', eventRoutes);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 

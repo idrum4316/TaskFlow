@@ -11,8 +11,8 @@ router.get('/lookup', async (req, res) => {
   if (!email) return res.status(400).json({ error: 'email query parameter is required' });
 
   try {
-    const result = await getUsersDb().find({ selector: { email }, limit: 1 });
-    const user = result.docs[0];
+    const result = await getUsersDb().view('users', 'by_email', { key: email, include_docs: true, limit: 1 });
+    const user = result.rows[0]?.doc;
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json({ id: user._id, username: user.username, email: user.email });
   } catch {

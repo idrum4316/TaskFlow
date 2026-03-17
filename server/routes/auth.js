@@ -34,8 +34,8 @@ router.post('/register', async (req, res) => {
   // Check if this is the very first user (auto-admin)
   let isFirstUser = false;
   try {
-    const allUsers = await db.find({ selector: { type: 'user' }, limit: 1 });
-    isFirstUser = allUsers.docs.length === 0;
+    const allUsers = await db.view('users', 'all', { limit: 1 });
+    isFirstUser = allUsers.rows.length === 0;
   } catch {
     return res.status(500).json({ error: 'Database error' });
   }
@@ -77,11 +77,11 @@ router.post('/register', async (req, res) => {
 
   // Check for duplicate email or username
   try {
-    const existing = await db.find({
-      selector: { $or: [{ email }, { username }] },
-      limit: 1,
-    });
-    if (existing.docs.length > 0) {
+    const [byEmail, byUsername] = await Promise.all([
+      db.view('users', 'by_email', { key: email, limit: 1 }),
+      db.view('users', 'by_username', { key: username, limit: 1 }),
+    ]);
+    if (byEmail.rows.length > 0 || byUsername.rows.length > 0) {
       return res.status(409).json({ error: 'Username or email already in use' });
     }
   } catch {
@@ -152,8 +152,8 @@ router.post('/login', async (req, res) => {
 
   let user;
   try {
-    const result = await db.find({ selector: { email }, limit: 1 });
-    user = result.docs[0];
+    const result = await db.view('users', 'by_email', { key: email, include_docs: true, limit: 1 });
+    user = result.rows[0]?.doc;
   } catch {
     return res.status(500).json({ error: 'Database error' });
   }

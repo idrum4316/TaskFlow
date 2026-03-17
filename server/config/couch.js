@@ -71,6 +71,46 @@ const TASK_DESIGN_DOC = {
   },
 };
 
+const USER_DESIGN_DOC = {
+  _id: '_design/users',
+  views: {
+    all: {
+      map: `function (doc) {
+        if (doc.type === 'user') {
+          emit(doc._id, null);
+        }
+      }`,
+    },
+    by_email: {
+      map: `function (doc) {
+        if (doc.type === 'user') {
+          emit(doc.email, null);
+        }
+      }`,
+    },
+    by_username: {
+      map: `function (doc) {
+        if (doc.type === 'user') {
+          emit(doc.username, null);
+        }
+      }`,
+    },
+  },
+};
+
+const SETTINGS_DESIGN_DOC = {
+  _id: '_design/settings',
+  views: {
+    invite_tokens: {
+      map: `function (doc) {
+        if (doc.type === 'invite_token') {
+          emit(doc._id, null);
+        }
+      }`,
+    },
+  },
+};
+
 const BOARD_DESIGN_DOC = {
   _id: '_design/boards',
   views: {
@@ -155,6 +195,8 @@ async function initDb() {
   settingsDb = await ensureDb('todo_settings');
   await ensureDesignDoc(tasksDb, TASK_DESIGN_DOC);
   await ensureDesignDoc(boardsDb, BOARD_DESIGN_DOC);
+  await ensureDesignDoc(usersDb, USER_DESIGN_DOC);
+  await ensureDesignDoc(settingsDb, SETTINGS_DESIGN_DOC);
   await ensureDefaultSettings();
   console.log('Database initialised');
 }

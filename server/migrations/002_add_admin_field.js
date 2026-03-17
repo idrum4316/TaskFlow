@@ -8,10 +8,8 @@ module.exports = {
 
   async up({ getUsersDb }) {
     const usersDb = getUsersDb();
-    const { docs: users } = await usersDb.find({
-      selector: { type: 'user' },
-      limit: 10000,
-    });
+    const { rows } = await usersDb.view('users', 'all', { include_docs: true });
+    const users = rows.map(r => r.doc);
 
     for (const user of users) {
       if (user.is_admin === undefined) {

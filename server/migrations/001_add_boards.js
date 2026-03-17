@@ -12,7 +12,8 @@ module.exports = {
     const tasksDb = getTasksDb();
     const boardsDb = getBoardsDb();
 
-    const { docs: users } = await usersDb.find({ selector: { type: 'user' }, limit: 10000 });
+    const { rows } = await usersDb.view('users', 'all', { include_docs: true });
+    const users = rows.map(r => r.doc);
     console.log(`Migration 001: processing ${users.length} user(s)`);
 
     for (const user of users) {

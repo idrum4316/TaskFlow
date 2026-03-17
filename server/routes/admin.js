@@ -16,12 +16,14 @@ router.use(requireAuth, requireAdmin);
 router.get('/users', async (_req, res) => {
   try {
     const db = getUsersDb();
-    const { docs } = await db.find({
-      selector: { type: 'user' },
-      fields: ['_id', 'username', 'email', 'is_admin', 'created_at'],
-      limit: 10000,
-    });
-    res.json(docs);
+    const { rows } = await db.view('users', 'all', { include_docs: true });
+    res.json(rows.map(r => ({
+      _id: r.doc._id,
+      username: r.doc.username,
+      email: r.doc.email,
+      is_admin: r.doc.is_admin,
+      created_at: r.doc.created_at,
+    })));
   } catch {
     res.status(500).json({ error: 'Failed to fetch users' });
   }
@@ -188,12 +190,17 @@ router.post('/invite-tokens', async (req, res) => {
 router.get('/invite-tokens', async (_req, res) => {
   try {
     const db = getSettingsDb();
-    const { docs } = await db.find({
-      selector: { type: 'invite_token' },
-      fields: ['token', 'email', 'created_at', 'expires_at', 'created_by', 'used', 'used_at', 'used_by'],
-      limit: 10000,
-    });
-    res.json(docs);
+    const { rows } = await db.view('settings', 'invite_tokens', { include_docs: true });
+    res.json(rows.map(r => ({
+      token: r.doc.token,
+      email: r.doc.email,
+      created_at: r.doc.created_at,
+      expires_at: r.doc.expires_at,
+      created_by: r.doc.created_by,
+      used: r.doc.used,
+      used_at: r.doc.used_at,
+      used_by: r.doc.used_by,
+    })));
   } catch {
     res.status(500).json({ error: 'Failed to fetch invitation tokens' });
   }
