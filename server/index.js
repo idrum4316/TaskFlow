@@ -16,7 +16,7 @@ const adminRoutes = require('./routes/admin');
 const accountRoutes = require('./routes/account');
 const attachmentRoutes = require('./routes/attachments');
 const linkRoutes = require('./routes/links');
-const eventRoutes = require('./routes/events');
+const { attachWebSocketServer } = require('./events/changes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,7 +35,6 @@ app.use('/api/tasks/:id/attachments', attachmentRoutes);
 app.use('/api/tasks/:id/links', linkRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/account', accountRoutes);
-app.use('/api/events', eventRoutes);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
@@ -50,7 +49,8 @@ async function start() {
   await initDb();
   await ensureBucket();
   await runMigrations();
-  app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+  const server = app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+  attachWebSocketServer(server);
 }
 
 start().catch((err) => {

@@ -2,54 +2,94 @@ import { watch, onUnmounted, ref } from 'vue';
 import { useBoardsStore } from '@/stores/boards';
 import { useTasksStore } from '@/stores/tasks';
 
+const RECONNECT_BASE = 1000;
+const RECONNECT_MAX = 30000;
+
 export function useBoardEvents(boardId) {
-  let eventSource = null;
+  let ws = null;
+  let reconnectTimer = null;
+  let reconnectDelay = RECONNECT_BASE;
+  let currentBoardId = null;
   const connected = ref(false);
   let wasConnected = false;
 
+  function getWsUrl(id) {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${proto}//${location.host}/ws`;
+  }
+
+  function scheduleReconnect() {
+    if (reconnectTimer) return;
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null;
+      if (currentBoardId) connect(currentBoardId);
+    }, reconnectDelay);
+    reconnectDelay = Math.min(reconnectDelay * 2, RECONNECT_MAX);
+  }
+
   function connect(id) {
     disconnect();
+    currentBoardId = id;
     if (!id) return;
 
     const token = localStorage.getItem('token');
     if (!token) return;
 
-    const url = `/api/events?board_id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}`;
-    eventSource = new EventSource(url);
+    ws = new WebSocket(getWsUrl(id));
 
-    eventSource.addEventListener('connected', () => {
-      const reconnected = wasConnected;
-      connected.value = true;
-      wasConnected = true;
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: 'subscribe', token, boardId: id }));
+    };
 
-      // Refresh data on reconnect to catch events missed during downtime
-      if (reconnected) {
-        const tasksStore = useTasksStore();
-        const boardsStore = useBoardsStore();
-        tasksStore.fetchTasks(id);
-        boardsStore.fetchBoards();
-      }
-    });
-
-    eventSource.addEventListener('change', (e) => {
+    ws.onmessage = (e) => {
+      let msg;
       try {
-        const data = JSON.parse(e.data);
-        handleChange(data);
+        msg = JSON.parse(e.data);
       } catch {
-        // Ignore malformed events
+        return;
       }
-    });
 
-    eventSource.onerror = () => {
+      if (msg.event === 'connected') {
+        const reconnected = wasConnected;
+        connected.value = true;
+        wasConnected = true;
+        reconnectDelay = RECONNECT_BASE;
+
+        if (reconnected) {
+          const tasksStore = useTasksStore();
+          const boardsStore = useBoardsStore();
+          tasksStore.fetchTasks(id);
+          boardsStore.fetchBoards();
+        }
+        return;
+      }
+
+      if (msg.event === 'change') {
+        handleChange(msg);
+      }
+    };
+
+    ws.onclose = (e) => {
       connected.value = false;
-      // EventSource auto-reconnects on error
+      ws = null;
+      // Don't reconnect on auth/permission errors (custom close codes)
+      if (e.code >= 4400 && e.code < 4500) return;
+      scheduleReconnect();
+    };
+
+    ws.onerror = () => {
+      // onclose will fire after this — reconnect handled there
     };
   }
 
   function disconnect() {
-    if (eventSource) {
-      eventSource.close();
-      eventSource = null;
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+    if (ws) {
+      ws.close();
+      ws = null;
       connected.value = false;
     }
   }
