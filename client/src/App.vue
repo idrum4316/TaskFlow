@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col h-screen">
     <NavBar v-if="authStore.isAuthenticated" />
-    <main class="flex-1 min-h-0">
+    <main class="flex-1 min-h-0 flex flex-col">
       <RouterView />
     </main>
     <SessionExpiredModal v-if="sessionExpired" />
