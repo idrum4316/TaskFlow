@@ -58,6 +58,27 @@
             Share
           </button>
 
+          <button
+            @click="showNotes = true"
+            class="hidden md:flex items-center gap-1.5 text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+            </svg>
+            Notes
+          </button>
+
+          <!-- Mobile notes button (all users, < md) -->
+          <button
+            @click="showNotes = true"
+            class="md:hidden w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            aria-label="Board notes"
+          >
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+            </svg>
+          </button>
+
           <!-- Mobile overflow menu (< md, owner only) -->
           <div v-if="isOwner" class="relative md:hidden">
             <button
@@ -103,6 +124,15 @@
                   <path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
                 </svg>
                 Share
+              </button>
+              <button
+                @click="showNotes = true; showBoardMenu = false"
+                class="flex items-center gap-2.5 w-full text-left text-sm text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 px-3 py-2.5 transition-colors"
+              >
+                <svg class="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                </svg>
+                Notes
               </button>
             </div>
           </div>
@@ -237,6 +267,15 @@
       @delete="handleFormDelete"
     />
 
+    <!-- Board notes panel -->
+    <BoardNotes
+      v-if="showNotes && board"
+      :board-id="board._id"
+      :board-name="board.name"
+      :is-owner="isOwner"
+      @close="showNotes = false"
+    />
+
     <!-- Share board modal -->
     <ShareBoardModal
       v-if="showShareModal && board"
@@ -273,11 +312,13 @@ import { useRoute, useRouter, RouterLink } from 'vue-router';
 import { useBoardsStore } from '@/stores/boards';
 import { useTasksStore } from '@/stores/tasks';
 import { useSharesStore } from '@/stores/shares';
+import { useNotesStore } from '@/stores/notes';
 import KanbanBoard from '@/components/KanbanBoard.vue';
 import TaskListView from '@/components/TaskListView.vue';
 import TaskCalendarView from '@/components/TaskCalendarView.vue';
 import TaskForm from '@/components/TaskForm.vue';
 import ShareBoardModal from '@/components/ShareBoardModal.vue';
+import BoardNotes from '@/components/BoardNotes.vue';
 import StatusManager from '@/components/StatusManager.vue';
 import LabelManager from '@/components/LabelManager.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
@@ -288,6 +329,7 @@ const router = useRouter();
 const boardsStore = useBoardsStore();
 const tasksStore = useTasksStore();
 const sharesStore = useSharesStore();
+const notesStore = useNotesStore();
 
 const boardId = computed(() => route.params.id);
 const board = computed(() => boardsStore.boards.find((b) => b._id === boardId.value));
@@ -312,6 +354,7 @@ provide('doneStatusIds', doneStatusIds);
 const showShareModal = ref(false);
 const showStatusManager = ref(false);
 const showLabelManager = ref(false);
+const showNotes = ref(false);
 const showBoardMenu = ref(false);
 const showDeleteConfirm = ref(false);
 const pendingDeleteId = ref(null);
@@ -408,8 +451,7 @@ onMounted(() => {
 });
 onUnmounted(() => {
   tasksStore.clearTasks();
-  sharesStore.clearShares();
-  document.removeEventListener('click', closeBoardMenu);
+  sharesStore.clearShares();    notesStore.clearNotes();  document.removeEventListener('click', closeBoardMenu);
 });
 watch(boardId, load);
 

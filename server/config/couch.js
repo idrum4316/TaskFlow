@@ -143,6 +143,13 @@ const BOARD_DESIGN_DOC = {
         }
       }`,
     },
+    notes_by_board: {
+      map: `function (doc) {
+        if (doc.type === 'board_note') {
+          emit(doc.board_id, null);
+        }
+      }`,
+    },
   },
 };
 
