@@ -119,6 +119,7 @@ export function useBoardEvents(boardId) {
           attachment_count: 0,
         });
       }
+      tasksStore.sortByPosition();
     }
 
     if (data.type === 'board' && data.action === 'upsert') {

@@ -9,6 +9,7 @@ router.use(requireAuth);
 
 const DEFAULT_STATUSES = ['todo', 'in-progress', 'done'];
 const VALID_PRIORITIES = ['low', 'medium', 'high'];
+const POSITION_GAP = 10000;
 
 function validateTask(body, requireBoardId = false, boardStatuses = null) {
   const errors = [];
@@ -87,6 +88,7 @@ router.get('/', async (req, res) => {
       }
     }
 
+    docs.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
     res.json(docs);
   } catch (err) {
     console.error(err);
@@ -109,6 +111,22 @@ router.post('/', async (req, res) => {
   if (errors.length) return res.status(400).json({ errors });
 
   const defaultStatus = board.statuses?.[0]?.id || 'todo';
+  const taskStatus = req.body.status || defaultStatus;
+
+  // Compute position: append to end of status group
+  let maxPosition = 0;
+  try {
+    const { rows } = await getTasksDb().view('tasks', 'by_board_and_status', {
+      key: [req.body.board_id, taskStatus],
+      include_docs: true,
+    });
+    for (const r of rows) {
+      if (r.doc.position != null && r.doc.position > maxPosition) {
+        maxPosition = r.doc.position;
+      }
+    }
+  } catch { /* use 0 */ }
+
   const now = new Date().toISOString();
   const doc = {
     type: 'task',
@@ -116,10 +134,11 @@ router.post('/', async (req, res) => {
     board_id: req.body.board_id,
     title: req.body.title.trim(),
     description: req.body.description?.trim() || '',
-    status: req.body.status || defaultStatus,
+    status: taskStatus,
     priority: req.body.priority || 'medium',
     due_date: req.body.due_date || null,
     labels: Array.isArray(req.body.labels) ? req.body.labels : [],
+    position: maxPosition + POSITION_GAP,
     created_at: now,
     updated_at: now,
   };
@@ -192,6 +211,7 @@ router.put('/:id', async (req, res) => {
     priority: req.body.priority ?? existing.priority,
     due_date: req.body.due_date !== undefined ? req.body.due_date : existing.due_date,
     labels: Array.isArray(req.body.labels) ? req.body.labels : (existing.labels || []),
+    position: req.body.position ?? existing.position ?? 0,
     updated_at: new Date().toISOString(),
   };
 
@@ -290,6 +310,91 @@ router.delete('/:id', async (req, res) => {
     res.status(204).end();
   } catch {
     res.status(500).json({ error: 'Failed to delete task' });
+  }
+});
+
+// PUT /api/tasks/:id/reorder
+router.put('/:id/reorder', async (req, res) => {
+  const { status, position } = req.body;
+  if (typeof position !== 'number') {
+    return res.status(400).json({ error: 'position is required and must be a number' });
+  }
+
+  const db = getTasksDb();
+  let existing;
+  try {
+    existing = await db.get(req.params.id);
+  } catch (err) {
+    if (err.statusCode === 404) return res.status(404).json({ error: 'Task not found' });
+    return res.status(500).json({ error: 'Failed to fetch task' });
+  }
+
+  try {
+    await assertBoardAccess(existing.board_id, req.user.sub, 'write');
+  } catch (err) {
+    if (err.status === 403) return res.status(403).json({ error: 'Forbidden' });
+    return res.status(500).json({ error: 'Failed to verify board' });
+  }
+
+  const targetStatus = status || existing.status;
+  const updated = {
+    ...existing,
+    status: targetStatus,
+    position,
+    updated_at: new Date().toISOString(),
+  };
+
+  try {
+    const result = await db.insert(updated);
+    const saved = { ...updated, _rev: result.rev };
+
+    // Check if renumbering is needed for the target status group
+    const { rows } = await db.view('tasks', 'by_board_and_status', {
+      key: [existing.board_id, targetStatus],
+      include_docs: true,
+    });
+    const siblings = rows
+      .map((r) => (r.doc._id === saved._id ? saved : r.doc))
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+
+    let needsRenumber = false;
+    for (let i = 1; i < siblings.length; i++) {
+      if (Math.abs((siblings[i].position ?? 0) - (siblings[i - 1].position ?? 0)) < 1) {
+        needsRenumber = true;
+        break;
+      }
+    }
+
+    if (needsRenumber) {
+      const bulkDocs = [];
+      const renumbered = [];
+      for (let i = 0; i < siblings.length; i++) {
+        const newPos = (i + 1) * POSITION_GAP;
+        if (siblings[i].position !== newPos) {
+          siblings[i].position = newPos;
+          siblings[i].updated_at = updated.updated_at;
+          bulkDocs.push(siblings[i]);
+          renumbered.push({ _id: siblings[i]._id, position: newPos });
+        }
+      }
+      if (bulkDocs.length) {
+        const bulkResult = await db.bulk({ docs: bulkDocs });
+        // Update revs from bulk result
+        for (const br of bulkResult) {
+          if (br.ok) {
+            const entry = renumbered.find((r) => r._id === br.id);
+            if (entry) entry._rev = br.rev;
+            if (br.id === saved._id) saved._rev = br.rev;
+          }
+        }
+      }
+      saved.position = renumbered.find((r) => r._id === saved._id)?.position ?? saved.position;
+      res.json({ ...saved, renumbered });
+    } else {
+      res.json(saved);
+    }
+  } catch {
+    res.status(500).json({ error: 'Failed to reorder task' });
   }
 });
 

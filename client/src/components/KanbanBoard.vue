@@ -11,7 +11,7 @@
       @add="$emit('add', col.status)"
       @edit="$emit('edit', $event)"
       @delete="$emit('delete', $event)"
-      @status-change="$emit('status-change', $event)"
+      @reorder="$emit('reorder', $event)"
     />
   </div>
 </template>
@@ -33,9 +33,9 @@ const props = defineProps({
   statuses: { type: Array, default: () => [] },
 });
 
-const emit = defineEmits(['add', 'edit', 'delete', 'status-change']);
+const emit = defineEmits(['add', 'edit', 'delete', 'reorder']);
 
-useTouchDropHandler((payload) => emit('status-change', payload));
+useTouchDropHandler((payload) => emit('reorder', payload));
 
 const columns = computed(() => {
   const s = props.statuses.length ? props.statuses : DEFAULT_STATUSES;
@@ -55,6 +55,10 @@ const tasksByStatus = computed(() => {
       const first = columns.value[0]?.status;
       if (first && map[first]) map[first].push(task);
     }
+  }
+  // Sort each column by position
+  for (const col of columns.value) {
+    map[col.status].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   }
   return map;
 });

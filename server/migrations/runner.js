@@ -7,6 +7,7 @@ const migrations = [
   require('./003_add_board_statuses'),
   require('./004_add_board_labels'),
   require('./005_drop_old_invite_tokens'),
+  require('./006_add_task_positions'),
 ];
 
 async function runMigrations() {

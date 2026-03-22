@@ -23,9 +23,10 @@
 
     <!-- Cards container -->
     <div
+      ref="columnEl"
       :data-drop-status="status"
       :class="['flex flex-col gap-2.5 p-1.5 rounded-xl flex-1 min-h-0 overflow-y-auto transition-all duration-200', isHighlighted ? 'bg-brand-50/60 dark:bg-brand-900/20 ring-2 ring-brand-400/50 ring-inset' : 'bg-transparent']"
-      @dragover.prevent="dragOver = true"
+      @dragover.prevent="onDragOver"
       @dragleave="onDragLeave"
       @drop="onDrop"
     >
@@ -33,13 +34,25 @@
         <div v-for="i in 3" :key="i" class="h-20 rounded-lg bg-zinc-100 dark:bg-zinc-800 animate-pulse" aria-hidden="true" />
       </div>
 
-      <KanbanCard
-        v-for="task in tasks"
-        :key="task._id"
-        :task="task"
-        @edit="$emit('edit', task)"
-        @delete="$emit('delete', task._id)"
-        @status-change="(s) => $emit('status-change', { id: task._id, status: s })"
+      <template v-for="(task, idx) in tasks" :key="task._id">
+        <!-- Drop indicator before this card -->
+        <div
+          v-if="dropIndex === idx"
+          class="h-1 rounded-full bg-brand-500 mx-1 transition-all"
+          aria-hidden="true"
+        />
+        <KanbanCard
+          :task="task"
+          :data-task-id="task._id"
+          @edit="$emit('edit', task)"
+          @delete="$emit('delete', task._id)"
+        />
+      </template>
+      <!-- Drop indicator at the end -->
+      <div
+        v-if="dropIndex === tasks.length"
+        class="h-1 rounded-full bg-brand-500 mx-1 transition-all"
+        aria-hidden="true"
       />
 
       <button
@@ -59,6 +72,7 @@ import { ref, computed, inject } from 'vue';
 import KanbanCard from './KanbanCard.vue';
 import { touchDragState } from '@/composables/useTouchDragDrop';
 
+const POSITION_GAP = 10000;
 const canEdit = inject('canEdit', true);
 
 const props = defineProps({
@@ -69,19 +83,75 @@ const props = defineProps({
   loading: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['add', 'edit', 'delete', 'status-change']);
+const emit = defineEmits(['add', 'edit', 'delete', 'reorder']);
 
+const columnEl = ref(null);
 const dragOver = ref(false);
+const dropIndex = ref(null);
 const touchHover = computed(() => touchDragState.dragging && touchDragState.hoverStatus === props.status);
 const isHighlighted = computed(() => dragOver.value || touchHover.value);
 
+function getDropIndex(y) {
+  if (!columnEl.value) return props.tasks.length;
+  const cards = columnEl.value.querySelectorAll('[data-task-id]');
+  for (let i = 0; i < cards.length; i++) {
+    const rect = cards[i].getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    if (y < midY) return i;
+  }
+  return props.tasks.length;
+}
+
+function computePosition(targetIndex) {
+  const sorted = props.tasks;
+  if (sorted.length === 0) return POSITION_GAP;
+  if (targetIndex <= 0) return (sorted[0].position ?? 0) - POSITION_GAP;
+  if (targetIndex >= sorted.length) return (sorted[sorted.length - 1].position ?? 0) + POSITION_GAP;
+  const before = sorted[targetIndex - 1].position ?? 0;
+  const after = sorted[targetIndex].position ?? 0;
+  return Math.round((before + after) / 2);
+}
+
+function onDragOver(e) {
+  dragOver.value = true;
+  dropIndex.value = getDropIndex(e.clientY);
+}
+
 function onDragLeave(e) {
-  if (!e.currentTarget.contains(e.relatedTarget)) dragOver.value = false;
+  if (!e.currentTarget.contains(e.relatedTarget)) {
+    dragOver.value = false;
+    dropIndex.value = null;
+  }
 }
 
 function onDrop(e) {
+  const idx = dropIndex.value ?? props.tasks.length;
   dragOver.value = false;
+  dropIndex.value = null;
   const taskId = e.dataTransfer.getData('taskId');
-  if (taskId) emit('status-change', { id: taskId, status: props.status });
+  if (!taskId) return;
+
+  // If dropping the same task in the same position, skip
+  const currentIdx = props.tasks.findIndex((t) => t._id === taskId);
+  if (currentIdx !== -1 && (currentIdx === idx || currentIdx === idx - 1)) return;
+
+  // If the dragged task is from this column, adjust index
+  let adjustedIdx = idx;
+  if (currentIdx !== -1 && currentIdx < idx) adjustedIdx--;
+
+  // Filter out the dragged task to compute position correctly
+  const remaining = props.tasks.filter((t) => t._id !== taskId);
+  const position = computePositionFromList(remaining, adjustedIdx);
+
+  emit('reorder', { id: taskId, status: props.status, position });
+}
+
+function computePositionFromList(sortedTasks, targetIndex) {
+  if (sortedTasks.length === 0) return POSITION_GAP;
+  if (targetIndex <= 0) return (sortedTasks[0].position ?? 0) - POSITION_GAP;
+  if (targetIndex >= sortedTasks.length) return (sortedTasks[sortedTasks.length - 1].position ?? 0) + POSITION_GAP;
+  const before = sortedTasks[targetIndex - 1].position ?? 0;
+  const after = sortedTasks[targetIndex].position ?? 0;
+  return Math.round((before + after) / 2);
 }
 </script>

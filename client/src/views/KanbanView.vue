@@ -45,7 +45,7 @@
         @add="openCreateInColumn"
         @edit="openEdit"
         @delete="handleDelete"
-        @status-change="handleStatusChange"
+        @reorder="handleReorder"
       />
     </div>
 
@@ -112,6 +112,9 @@ const tasksByStatus = computed(() => {
       if (first && map[first]) map[first].push(task);
     }
   }
+  for (const col of columns.value) {
+    map[col.status].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  }
   return map;
 });
 
@@ -168,7 +171,11 @@ async function handleStatusChange({ id, status }) {
   if (task) await tasksStore.updateTask(id, { ...task, status });
 }
 
-useTouchDropHandler(handleStatusChange);
+async function handleReorder({ id, status, position }) {
+  await tasksStore.reorderTask(id, status, position);
+}
+
+useTouchDropHandler(handleReorder);
 
 async function handleOpenLinkedTask(taskId) {
   const task = tasksStore.tasks.find((t) => t._id === taskId);

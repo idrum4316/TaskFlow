@@ -13,6 +13,7 @@ const LONG_PRESS_MS = 200;
 const MOVE_THRESHOLD = 8;
 const AUTO_SCROLL_THRESHOLD = 50;
 const AUTO_SCROLL_SPEED = 6;
+const POSITION_GAP = 10000;
 
 /* ------------------------------------------------------------------ */
 /*  Module-level singleton state                                       */
@@ -21,6 +22,7 @@ const state = reactive({
   dragging: false,
   taskId: null,
   hoverStatus: null,
+  hoverPosition: null,
 });
 
 export const touchDragState = readonly(state);
@@ -39,8 +41,8 @@ let scrollInterval = null;
 /* ------------------------------------------------------------------ */
 const dropCallbacks = new Set();
 
-function notifyDrop(taskId, status) {
-  for (const cb of dropCallbacks) cb({ id: taskId, status });
+function notifyDrop(taskId, status, position) {
+  for (const cb of dropCallbacks) cb({ id: taskId, status, position });
 }
 
 /* ------------------------------------------------------------------ */
@@ -88,9 +90,38 @@ function findDropStatus(x, y) {
   for (const el of els) {
     if (el === ghost) continue;
     const status = el.dataset?.dropStatus;
-    if (status) return status;
+    if (status) return { status, container: el };
   }
-  return null;
+  return { status: null, container: null };
+}
+
+function computeDropPosition(container, y, taskId) {
+  if (!container) return POSITION_GAP;
+  const cards = container.querySelectorAll('[data-task-id]');
+  // Build sorted list excluding the dragged task
+  const items = [];
+  for (const card of cards) {
+    if (card.dataset.taskId === taskId) continue;
+    const rect = card.getBoundingClientRect();
+    const pos = parseFloat(card.dataset.taskPosition) || 0;
+    items.push({ rect, position: pos });
+  }
+
+  if (items.length === 0) return POSITION_GAP;
+
+  // Find insertion index
+  let idx = items.length;
+  for (let i = 0; i < items.length; i++) {
+    const midY = items[i].rect.top + items[i].rect.height / 2;
+    if (y < midY) {
+      idx = i;
+      break;
+    }
+  }
+
+  if (idx <= 0) return items[0].position - POSITION_GAP;
+  if (idx >= items.length) return items[items.length - 1].position + POSITION_GAP;
+  return Math.round((items[idx - 1].position + items[idx].position) / 2);
 }
 
 /* ------------------------------------------------------------------ */
@@ -157,7 +188,9 @@ function onTouchMove(e) {
 
   e.preventDefault(); // Prevent scrolling while dragging
   moveGhost(touch.clientX, touch.clientY);
-  state.hoverStatus = findDropStatus(touch.clientX, touch.clientY);
+  const { status, container } = findDropStatus(touch.clientX, touch.clientY);
+  state.hoverStatus = status;
+  state.hoverPosition = container ? computeDropPosition(container, touch.clientY, state.taskId) : null;
   startAutoScroll(touch.clientX, touch.clientY);
 }
 
@@ -165,11 +198,12 @@ function onTouchEnd() {
   const hadDrag = state.dragging;
   const taskId = state.taskId;
   const status = state.hoverStatus;
+  const position = state.hoverPosition;
   cleanup();
 
   if (hadDrag) {
     preventNextClick();
-    if (taskId && status) notifyDrop(taskId, status);
+    if (taskId && status) notifyDrop(taskId, status, position ?? POSITION_GAP);
   }
 }
 
@@ -188,6 +222,7 @@ function cleanup() {
   state.dragging = false;
   state.taskId = null;
   state.hoverStatus = null;
+  state.hoverPosition = null;
   document.removeEventListener('touchmove', onTouchMove);
   document.removeEventListener('touchend', onTouchEnd);
   document.removeEventListener('touchcancel', onTouchEnd);

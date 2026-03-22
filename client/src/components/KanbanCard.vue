@@ -5,6 +5,8 @@
     @dragend="dragging = false"
     @touchstart="onTouchStart"
     @click="$emit('edit')"
+    :data-task-id="task._id"
+    :data-task-position="task.position ?? 0"
     class="bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200/80 dark:border-zinc-700/80 hover:border-zinc-300 dark:hover:border-zinc-600 transition-all duration-150 cursor-pointer group shadow-sm hover:shadow-md"
     :class="{ 'opacity-50': isDone, 'opacity-40 scale-[0.97]': dragging || touchDragging }"
   >
@@ -113,7 +115,7 @@ import { startTouchDrag, touchDragState } from '@/composables/useTouchDragDrop';
 const props = defineProps({
   task: { type: Object, required: true },
 });
-defineEmits(['edit', 'delete', 'status-change']);
+defineEmits(['edit', 'delete']);
 
 const touchDragging = computed(() => touchDragState.dragging && touchDragState.taskId === props.task._id);
 

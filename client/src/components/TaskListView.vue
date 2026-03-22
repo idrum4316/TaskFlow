@@ -50,7 +50,7 @@
           class="space-y-1 rounded-xl transition-colors"
           :class="isGroupHighlighted(group.status) ? 'ring-2 ring-brand-400 bg-brand-50/40 dark:bg-brand-900/20' : ''"
           role="list"
-          @dragover.prevent="dropTarget = group.status"
+          @dragover.prevent="onListDragOver($event, group.status)"
           @dragleave="onListDragLeave"
           @drop="onListDrop($event, group.status)"
         >
@@ -69,15 +69,20 @@
           </li>
 
           <li
-            v-for="task in group.tasks"
+            v-for="(task, idx) in group.tasks"
             :key="task._id"
             draggable="true"
             @dragstart="onListDragStart($event, task._id)"
             @dragend="draggingId = null"
             @touchstart="onListTouchStart($event, task._id)"
             @click="$emit('edit', task)"
+            :data-task-id="task._id"
+            :data-task-position="task.position ?? 0"
             class="flex items-center gap-3 bg-white dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700 rounded-xl px-4 py-3 hover:border-zinc-300 dark:hover:border-zinc-600 hover:shadow-card transition-all duration-150 group/row cursor-pointer"
-            :class="isItemDragging(task._id) ? 'opacity-40' : ''"
+            :class="[
+              isItemDragging(task._id) ? 'opacity-40' : '',
+              dropTarget === group.status && dropListIndex === idx ? 'ring-t-2 ring-brand-500' : '',
+            ]"
           >
             <!-- Priority bar -->
             <div :class="['w-1 h-8 rounded-full flex-shrink-0', priorityBar(task.priority)]" aria-hidden="true" />
@@ -166,13 +171,15 @@ const props = defineProps({
   statuses: { type: Array, default: () => [] },
 });
 
-const emit = defineEmits(['add', 'edit', 'delete', 'status-change']);
+const emit = defineEmits(['add', 'edit', 'delete', 'reorder']);
 
 const DEFAULT_STATUSES = [
   { id: 'todo', label: 'To Do', color: '#a1a1aa', done: false },
   { id: 'in-progress', label: 'In Progress', color: '#6366f1', done: false },
   { id: 'done', label: 'Done', color: '#10b981', done: true },
 ];
+
+const POSITION_GAP = 10000;
 
 const statusList = computed(() =>
   props.statuses.length ? props.statuses : DEFAULT_STATUSES
@@ -186,8 +193,9 @@ const statusMap = computed(() => {
 
 const draggingId = ref(null);
 const dropTarget = ref(null);
+const dropListIndex = ref(null);
 
-useTouchDropHandler((payload) => emit('status-change', payload));
+useTouchDropHandler((payload) => emit('reorder', payload));
 
 function isGroupHighlighted(status) {
   return dropTarget.value === status || (touchDragState.dragging && touchDragState.hoverStatus === status);
@@ -208,13 +216,56 @@ function onListDragStart(e, taskId) {
 }
 
 function onListDragLeave(e) {
-  if (!e.currentTarget.contains(e.relatedTarget)) dropTarget.value = null;
+  if (!e.currentTarget.contains(e.relatedTarget)) {
+    dropTarget.value = null;
+    dropListIndex.value = null;
+  }
 }
 
 function onListDrop(e, status) {
+  const idx = dropListIndex.value;
   dropTarget.value = null;
+  dropListIndex.value = null;
   const taskId = e.dataTransfer.getData('taskId');
-  if (taskId) emit('status-change', { id: taskId, status });
+  if (!taskId) return;
+
+  const group = groups.value.find((g) => g.status === status);
+  if (!group) return;
+
+  const currentIdx = group.tasks.findIndex((t) => t._id === taskId);
+  if (currentIdx !== -1 && idx != null && (currentIdx === idx || currentIdx === idx - 1)) return;
+
+  let adjustedIdx = idx ?? group.tasks.length;
+  const remaining = group.tasks.filter((t) => t._id !== taskId);
+  if (currentIdx !== -1 && currentIdx < adjustedIdx) adjustedIdx--;
+
+  const position = computePositionFromList(remaining, adjustedIdx);
+  emit('reorder', { id: taskId, status, position });
+}
+
+function onListDragOver(e, status) {
+  dropTarget.value = status;
+  const list = e.currentTarget;
+  const items = list.querySelectorAll('[data-task-id]');
+  const y = e.clientY;
+  let idx = items.length;
+  for (let i = 0; i < items.length; i++) {
+    const rect = items[i].getBoundingClientRect();
+    if (y < rect.top + rect.height / 2) {
+      idx = i;
+      break;
+    }
+  }
+  dropListIndex.value = idx;
+}
+
+function computePositionFromList(sortedTasks, targetIndex) {
+  if (sortedTasks.length === 0) return POSITION_GAP;
+  if (targetIndex <= 0) return (sortedTasks[0].position ?? 0) - POSITION_GAP;
+  if (targetIndex >= sortedTasks.length) return (sortedTasks[sortedTasks.length - 1].position ?? 0) + POSITION_GAP;
+  const before = sortedTasks[targetIndex - 1].position ?? 0;
+  const after = sortedTasks[targetIndex].position ?? 0;
+  return Math.round((before + after) / 2);
 }
 
 const collapsed = reactive({});
@@ -224,7 +275,9 @@ const groups = computed(() =>
     status: s.id,
     title: s.label,
     color: s.color,
-    tasks: props.tasks.filter((t) => t.status === s.id),
+    tasks: props.tasks
+      .filter((t) => t.status === s.id)
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
   }))
 );
 

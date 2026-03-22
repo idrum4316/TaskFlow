@@ -198,7 +198,7 @@
         @add="openCreateInColumn"
         @edit="openEdit"
         @delete="handleDelete"
-        @status-change="handleStatusChange"
+        @reorder="handleReorder"
       />
       <TaskListView
         v-else-if="activeView === 'list'"
@@ -208,7 +208,7 @@
         @add="openCreateInColumn"
         @edit="openEdit"
         @delete="handleDelete"
-        @status-change="handleStatusChange"
+        @reorder="handleReorder"
       />
       <TaskCalendarView
         v-else-if="activeView === 'calendar'"
@@ -472,6 +472,10 @@ async function handleFormDelete(id) {
 async function handleStatusChange({ id, status }) {
   const task = tasksStore.tasks.find((t) => t._id === id);
   if (task) await tasksStore.updateTask(id, { ...task, status });
+}
+
+async function handleReorder({ id, status, position }) {
+  await tasksStore.reorderTask(id, status, position);
 }
 
 async function handleDueDateChange({ id, due_date }) {
