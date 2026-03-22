@@ -1,14 +1,16 @@
 <template>
   <div class="flex flex-col w-80 flex-shrink-0 min-h-0">
     <!-- Column header -->
-    <div class="flex items-center justify-between px-3 py-2 mb-2 flex-shrink-0">
-      <div class="flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: color }" aria-hidden="true" />
-        <h3 class="font-semibold text-sm text-zinc-700 dark:text-zinc-300 tracking-wide uppercase">{{ title }}</h3>
-        <span class="text-xs font-medium bg-zinc-200/80 dark:bg-zinc-700 rounded-full px-2 py-0.5 text-zinc-500 dark:text-zinc-400 tabular-nums min-w-[1.5rem] text-center">
-          {{ tasks.length }}
-        </span>
-      </div>
+    <div class="rounded-xl mb-2 flex-shrink-0 overflow-hidden" :style="{ backgroundColor: color + '0a' }">
+      <div class="h-1 rounded-t-xl" :style="{ backgroundColor: color }" aria-hidden="true" />
+      <div class="flex items-center justify-between px-3 py-2">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full flex-shrink-0 ring-2 ring-white/80 dark:ring-zinc-900/80" :style="{ backgroundColor: color }" aria-hidden="true" />
+          <h3 class="font-semibold text-sm text-zinc-700 dark:text-zinc-300 tracking-wide uppercase">{{ title }}</h3>
+          <span class="text-xs font-medium rounded-full px-2 py-0.5 tabular-nums min-w-[1.5rem] text-center" :style="{ backgroundColor: color + '18', color: color }">
+            {{ tasks.length }}
+          </span>
+        </div>
       <button
         v-if="canEdit"
         @click="$emit('add', status)"
@@ -19,6 +21,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
         </svg>
       </button>
+      </div>
     </div>
 
     <!-- Cards container -->
@@ -43,6 +46,7 @@
         />
         <KanbanCard
           :task="task"
+          :status-color="color"
           :data-task-id="task._id"
           @edit="$emit('edit', task)"
           @delete="$emit('delete', task._id)"

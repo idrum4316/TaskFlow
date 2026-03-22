@@ -23,14 +23,15 @@
       <section v-for="group in groups" :key="group.status" class="mb-5">
         <!-- Group header -->
         <button
-          class="flex items-center gap-2 w-full text-left mb-2 py-1 rounded-lg hover:bg-zinc-100/60 dark:hover:bg-zinc-800/60 px-1 transition-colors group/header"
+          class="flex items-center gap-2 w-full text-left mb-2 py-1.5 rounded-lg px-2 transition-colors group/header border-l-[3px]"
+          :style="{ borderLeftColor: group.color, backgroundColor: group.color + '08' }"
           @click="toggleGroup(group.status)"
           :aria-expanded="!collapsed[group.status]"
           :aria-controls="`group-${group.status}`"
         >
-          <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" :style="{ backgroundColor: group.color }" aria-hidden="true" />
+          <div class="w-3 h-3 rounded-full flex-shrink-0 ring-2 ring-white/80 dark:ring-zinc-900/80" :style="{ backgroundColor: group.color }" aria-hidden="true" />
           <span class="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{{ group.title }}</span>
-          <span class="text-xs font-medium text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800 rounded-full px-2 py-0.5 tabular-nums">
+          <span class="text-xs font-medium rounded-full px-2 py-0.5 tabular-nums" :style="{ backgroundColor: group.color + '18', color: group.color }">
             {{ group.tasks.length }}
           </span>
           <svg
@@ -78,7 +79,8 @@
             @click="$emit('edit', task)"
             :data-task-id="task._id"
             :data-task-position="task.position ?? 0"
-            class="flex items-center gap-3 bg-white dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700 rounded-xl px-4 py-3 hover:border-zinc-300 dark:hover:border-zinc-600 hover:shadow-card transition-all duration-150 group/row cursor-pointer"
+            class="flex items-center gap-3 bg-white dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700 rounded-xl px-4 py-3 hover:border-zinc-300 dark:hover:border-zinc-600 hover:shadow-card transition-all duration-150 group/row cursor-pointer border-l-[3px]"
+            :style="{ borderLeftColor: group.color }"
             :class="[
               isItemDragging(task._id) ? 'opacity-40' : '',
               dropTarget === group.status && dropListIndex === idx ? 'ring-t-2 ring-brand-500' : '',
@@ -289,7 +291,7 @@ function priorityBar(p) { return PRIORITY_BARS[p] || 'bg-zinc-300'; }
 function statusBadgeStyle(s) {
   const st = statusMap.value[s];
   if (!st) return { backgroundColor: '#f4f4f5', color: '#71717a' };
-  return { backgroundColor: st.color + '22', color: st.color };
+  return { backgroundColor: st.color + '30', color: st.color };
 }
 function statusLabel(s) { return statusMap.value[s]?.label || s; }
 

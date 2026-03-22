@@ -1,5 +1,5 @@
 <template>
-  <li class="bg-white border border-gray-200 rounded-xl p-4 flex gap-4 hover:shadow-sm transition-shadow">
+  <li class="bg-white border border-gray-200 rounded-xl p-4 flex gap-4 hover:shadow-sm transition-shadow border-l-[3px]" :style="{ borderLeftColor: statusColor }">
     <!-- Priority indicator -->
     <div class="flex-shrink-0 mt-0.5">
       <span :class="['w-2.5 h-2.5 rounded-full block mt-1', priorityColor]" :title="task.priority" />
@@ -109,7 +109,12 @@ const statusLabel = computed(() => {
 const statusStyle = computed(() => {
   const s = statusMap.value[props.task.status];
   if (!s) return { backgroundColor: '#f4f4f5', color: '#71717a' };
-  return { backgroundColor: s.color + '22', color: s.color };
+  return { backgroundColor: s.color + '30', color: s.color };
+});
+
+const statusColor = computed(() => {
+  const s = statusMap.value[props.task.status];
+  return s?.color || '#a1a1aa';
 });
 
 function formatDate(dateStr) {
