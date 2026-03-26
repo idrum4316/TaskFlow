@@ -435,6 +435,7 @@ const editingTask = ref(null);
 const defaultStatus = ref('todo');
 
 async function load() {
+  tasksStore.clearTasks();
   if (!boardsStore.boards.length) await boardsStore.fetchBoards();
   await tasksStore.fetchTasks(boardId.value);
 }
