@@ -28,8 +28,8 @@ export function useBoardEvents(boardId) {
   }
 
   function connect(id) {
-    disconnect();
     currentBoardId = id;
+    disconnect();
     if (!id) return;
 
     const token = localStorage.getItem('token');
