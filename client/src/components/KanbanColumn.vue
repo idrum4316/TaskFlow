@@ -123,6 +123,14 @@ function onDragOver(e) {
 
 function onDragLeave(e) {
   if (!e.currentTarget.contains(e.relatedTarget)) {
+    // When hovering over a native scrollbar, relatedTarget is null and a
+    // dragleave fires even though the cursor is still inside the column.
+    // Guard against that by checking the cursor is actually outside the rect.
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (e.clientX >= rect.left && e.clientX <= rect.right &&
+        e.clientY >= rect.top && e.clientY <= rect.bottom) {
+      return;
+    }
     dragOver.value = false;
     dropIndex.value = null;
   }
