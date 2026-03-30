@@ -41,7 +41,7 @@
         <!-- Drop indicator before this card -->
         <div
           v-if="dropIndex === idx"
-          class="h-1 rounded-full bg-brand-500 mx-1 transition-all"
+          class="h-1 flex-shrink-0 rounded-full bg-brand-500 mx-1"
           aria-hidden="true"
         />
         <KanbanCard
@@ -55,7 +55,7 @@
       <!-- Drop indicator at the end -->
       <div
         v-if="dropIndex === tasks.length"
-        class="h-1 rounded-full bg-brand-500 mx-1 transition-all"
+        class="h-1 flex-shrink-0 rounded-full bg-brand-500 mx-1"
         aria-hidden="true"
       />
 
