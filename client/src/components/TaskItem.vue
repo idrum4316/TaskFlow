@@ -1,8 +1,19 @@
 <template>
   <li class="bg-white border border-gray-200 rounded-xl p-4 flex gap-4 hover:shadow-sm transition-shadow border-l-[3px]" :style="{ borderLeftColor: statusColor }">
-    <!-- Priority indicator -->
+    <!-- Priority indicator / Recurrence checkbox -->
     <div class="flex-shrink-0 mt-0.5">
-      <span :class="['w-2.5 h-2.5 rounded-full block mt-1', priorityColor]" :title="task.priority" />
+      <button
+        v-if="task.recurrence && task.due_date"
+        @click.stop="completeOccurrence"
+        :disabled="completing"
+        class="w-5 h-5 rounded-full border-2 border-brand-400 dark:border-brand-500 flex items-center justify-center hover:bg-brand-100 dark:hover:bg-brand-900/40 transition-colors disabled:opacity-50"
+        :title="'Complete this occurrence'"
+      >
+        <svg class="w-3 h-3 text-brand-500 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+      </button>
+      <span v-else :class="['w-2.5 h-2.5 rounded-full block mt-1', priorityColor]" :title="task.priority" />
     </div>
 
     <!-- Content -->
@@ -11,8 +22,15 @@
         <h3
           :class=\"['font-medium text-gray-900 truncate', isDone && 'line-through text-gray-400']\"
         >
-          {{ task.title }}
-        </h3>
+          {{ task.title }}          <span
+            v-if="task.recurrence"
+            class="inline-flex items-center ml-1 text-brand-500 dark:text-brand-400"
+            :title="describeRecurrence(task.recurrence)"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182M20.015 4.652v4.992" />
+            </svg>
+          </span>        </h3>
         <span class="flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full" :style="statusStyle">
           {{ statusLabel }}
         </span>
@@ -57,13 +75,28 @@
 </template>
 
 <script setup>
-import { computed, inject } from 'vue';
+import { computed, ref, inject } from 'vue';
+import { describeRecurrence } from '@/utils/recurrence';
+import { useTasksStore } from '@/stores/tasks';
 
 const props = defineProps({
   task: { type: Object, required: true },
   statuses: { type: Array, default: () => [] },
 });
 defineEmits(['edit', 'delete']);
+
+const tasksStore = useTasksStore();
+const completing = ref(false);
+
+async function completeOccurrence() {
+  if (completing.value) return;
+  completing.value = true;
+  try {
+    await tasksStore.completeOccurrence(props.task._id);
+  } finally {
+    completing.value = false;
+  }
+}
 
 const doneStatusIds = inject('doneStatusIds', computed(() => new Set(['done'])));
 const isDone = computed(() => doneStatusIds.value.has(props.task.status));

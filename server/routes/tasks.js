@@ -3,6 +3,7 @@ const { DeleteObjectsCommand } = require('@aws-sdk/client-s3');
 const { getTasksDb, getBoardsDb } = require('../config/couch');
 const { s3, S3_BUCKET, isS3Available } = require('../config/s3');
 const { requireAuth } = require('../middleware/auth');
+const { validateRecurrence, computeNextDueDate } = require('../utils/recurrence');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -23,6 +24,9 @@ function validateTask(body, requireBoardId = false, boardStatuses = null) {
   }
   if (body.priority && !VALID_PRIORITIES.includes(body.priority)) {
     errors.push(`priority must be one of: ${VALID_PRIORITIES.join(', ')}`);
+  }
+  if (body.recurrence !== undefined && body.recurrence !== null) {
+    errors.push(...validateRecurrence(body.recurrence));
   }
   return errors;
 }
@@ -74,17 +78,21 @@ router.get('/', async (req, res) => {
     // Enrich tasks with comment and attachment counts
     const taskIds = docs.map((d) => d._id);
     if (taskIds.length) {
-      const [commentRows, attachmentRows] = await Promise.all([
+      const [commentRows, attachmentRows, completionRows] = await Promise.all([
         db.view('tasks', 'by_task', { keys: taskIds }).then((r) => r.rows),
         db.view('tasks', 'attachments_by_task', { keys: taskIds }).then((r) => r.rows),
+        db.view('tasks', 'completions_by_task', { keys: taskIds }).then((r) => r.rows),
       ]);
       const commentCounts = {};
       const attachmentCounts = {};
+      const completionCounts = {};
       for (const r of commentRows) commentCounts[r.key] = (commentCounts[r.key] || 0) + 1;
       for (const r of attachmentRows) attachmentCounts[r.key] = (attachmentCounts[r.key] || 0) + 1;
+      for (const r of completionRows) completionCounts[r.key] = (completionCounts[r.key] || 0) + 1;
       for (const doc of docs) {
         doc.comment_count = commentCounts[doc._id] || 0;
         doc.attachment_count = attachmentCounts[doc._id] || 0;
+        doc.completion_count = completionCounts[doc._id] || 0;
       }
     }
 
@@ -138,6 +146,7 @@ router.post('/', async (req, res) => {
     priority: req.body.priority || 'medium',
     due_date: req.body.due_date || null,
     labels: Array.isArray(req.body.labels) ? req.body.labels : [],
+    recurrence: req.body.recurrence || null,
     position: maxPosition + POSITION_GAP,
     created_at: now,
     updated_at: now,
@@ -202,15 +211,19 @@ router.put('/:id', async (req, res) => {
     }
   }
 
+  const newStatus = req.body.status ?? existing.status;
+  const recurrence = req.body.recurrence !== undefined ? req.body.recurrence : (existing.recurrence || null);
+
   const updated = {
     ...existing,
     board_id: newBoardId,
     title: req.body.title.trim(),
     description: req.body.description?.trim() ?? existing.description,
-    status: req.body.status ?? existing.status,
+    status: newStatus,
     priority: req.body.priority ?? existing.priority,
     due_date: req.body.due_date !== undefined ? req.body.due_date : existing.due_date,
     labels: Array.isArray(req.body.labels) ? req.body.labels : (existing.labels || []),
+    recurrence,
     position: req.body.position ?? existing.position ?? 0,
     updated_at: new Date().toISOString(),
   };
@@ -306,10 +319,88 @@ router.delete('/:id', async (req, res) => {
       console.error('Failed to clean up task links:', err);
     }
 
+    // Delete associated completions
+    try {
+      const { rows: completionRows } = await db.view('tasks', 'completions_by_task', {
+        key: existing._id,
+        include_docs: true,
+      });
+      if (completionRows.length > 0) {
+        const bulkDocs = completionRows.map((r) => ({
+          _id: r.doc._id,
+          _rev: r.doc._rev,
+          _deleted: true,
+        }));
+        await db.bulk({ docs: bulkDocs });
+      }
+    } catch (err) {
+      console.error('Failed to clean up completions:', err);
+    }
+
     await db.destroy(existing._id, existing._rev);
     res.status(204).end();
   } catch {
     res.status(500).json({ error: 'Failed to delete task' });
+  }
+});
+
+// POST /api/tasks/:id/complete-occurrence
+// Completes one occurrence of a recurring task: records a completion, advances due date, keeps status.
+router.post('/:id/complete-occurrence', async (req, res) => {
+  const db = getTasksDb();
+  let existing;
+  try {
+    existing = await db.get(req.params.id);
+  } catch (err) {
+    if (err.statusCode === 404) return res.status(404).json({ error: 'Task not found' });
+    return res.status(500).json({ error: 'Failed to fetch task' });
+  }
+
+  try {
+    await assertBoardAccess(existing.board_id, req.user.sub, 'write');
+  } catch (err) {
+    if (err.status === 403) return res.status(403).json({ error: 'Forbidden' });
+    return res.status(500).json({ error: 'Failed to verify board' });
+  }
+
+  if (!existing.recurrence) {
+    return res.status(400).json({ error: 'Task is not recurring' });
+  }
+  if (!existing.due_date) {
+    return res.status(400).json({ error: 'Task has no due date' });
+  }
+
+  // Record the completion
+  const now = new Date().toISOString();
+  try {
+    await db.insert({
+      type: 'completion',
+      task_id: existing._id,
+      board_id: existing.board_id,
+      user_id: req.user.sub,
+      due_date: existing.due_date,
+      completed_at: now,
+    });
+  } catch (err) {
+    console.error('Failed to record completion:', err);
+  }
+
+  // Compute next due date
+  const nextDueDate = computeNextDueDate(existing.due_date, existing.recurrence);
+  const updated = { ...existing, updated_at: now };
+
+  if (nextDueDate) {
+    updated.due_date = nextDueDate;
+  } else {
+    // Past endDate — clear recurrence
+    updated.recurrence = null;
+  }
+
+  try {
+    const result = await db.insert(updated);
+    res.json({ ...updated, _rev: result.rev });
+  } catch {
+    res.status(500).json({ error: 'Failed to complete occurrence' });
   }
 });
 

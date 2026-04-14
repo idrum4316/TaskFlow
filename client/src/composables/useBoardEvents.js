@@ -112,12 +112,14 @@ export function useBoardEvents(boardId) {
           ...data.doc,
           comment_count: existing.comment_count ?? 0,
           attachment_count: existing.attachment_count ?? 0,
+          completion_count: existing.completion_count ?? 0,
         };
       } else {
         tasksStore.tasks.push({
           ...data.doc,
           comment_count: 0,
           attachment_count: 0,
+          completion_count: 0,
         });
       }
       tasksStore.sortByPosition();

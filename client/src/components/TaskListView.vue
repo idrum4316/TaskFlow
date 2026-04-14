@@ -86,8 +86,19 @@
               dropTarget === group.status && dropListIndex === idx ? 'ring-t-2 ring-brand-500' : '',
             ]"
           >
-            <!-- Priority bar -->
-            <div :class="['w-1 h-8 rounded-full flex-shrink-0', priorityBar(task.priority)]" aria-hidden="true" />
+            <!-- Priority bar / Recurrence checkbox -->
+            <button
+              v-if="task.recurrence && task.due_date"
+              @click.stop="completeOccurrence(task, $event)"
+              :disabled="completingId === task._id"
+              class="w-5 h-5 flex-shrink-0 rounded-full border-2 border-brand-400 dark:border-brand-500 flex items-center justify-center hover:bg-brand-100 dark:hover:bg-brand-900/40 transition-colors disabled:opacity-50"
+              title="Complete this occurrence"
+            >
+              <svg class="w-3 h-3 text-brand-500 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+            </button>
+            <div v-else :class="['w-1 h-8 rounded-full flex-shrink-0', priorityBar(task.priority)]" aria-hidden="true" />
 
             <!-- Content -->
             <div class="flex-1 min-w-0">
@@ -159,9 +170,24 @@
 <script setup>
 import { computed, reactive, ref, inject } from 'vue';
 import { startTouchDrag, touchDragState, useTouchDropHandler } from '@/composables/useTouchDragDrop';
+import { useTasksStore } from '@/stores/tasks';
 
 const canEdit = inject('canEdit', true);
 const doneStatusIds = inject('doneStatusIds', computed(() => new Set(['done'])));
+
+const tasksStore = useTasksStore();
+const completingId = ref(null);
+
+async function completeOccurrence(task, event) {
+  event.stopPropagation();
+  if (completingId.value) return;
+  completingId.value = task._id;
+  try {
+    await tasksStore.completeOccurrence(task._id);
+  } finally {
+    completingId.value = null;
+  }
+}
 
 function isDoneStatus(statusId) {
   return doneStatusIds.value.has(statusId);

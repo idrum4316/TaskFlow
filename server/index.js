@@ -17,6 +17,7 @@ const accountRoutes = require('./routes/account');
 const attachmentRoutes = require('./routes/attachments');
 const linkRoutes = require('./routes/links');
 const noteRoutes = require('./routes/notes');
+const completionRoutes = require('./routes/completions');
 const { attachWebSocketServer } = require('./events/changes');
 
 const app = express();
@@ -34,6 +35,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/tasks/:id/comments', commentRoutes);
 app.use('/api/tasks/:id/attachments', attachmentRoutes);
 app.use('/api/tasks/:id/links', linkRoutes);
+app.use('/api/tasks/:id/completions', completionRoutes);
 app.use('/api/boards/:id/notes', noteRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/account', accountRoutes);

@@ -8,6 +8,7 @@ const migrations = [
   require('./004_add_board_labels'),
   require('./005_drop_old_invite_tokens'),
   require('./006_add_task_positions'),
+  require('./007_add_task_recurrence'),
 ];
 
 async function runMigrations() {

@@ -14,7 +14,19 @@
     <div class="p-3">
       <!-- Priority accent + Title -->
       <div class="flex items-start gap-2">
-        <span :class="['w-1 h-5 rounded-full flex-shrink-0 mt-0.5', priorityBar]" aria-hidden="true" />
+        <!-- Recurrence complete checkbox -->
+        <button
+          v-if="task.recurrence && task.due_date"
+          @click.stop="completeOccurrence"
+          :disabled="completing"
+          class="w-5 h-5 mt-0.5 flex-shrink-0 rounded-full border-2 border-brand-400 dark:border-brand-500 flex items-center justify-center hover:bg-brand-100 dark:hover:bg-brand-900/40 transition-colors disabled:opacity-50"
+          :title="'Complete this occurrence'"
+        >
+          <svg class="w-3 h-3 text-brand-500 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+          </svg>
+        </button>
+        <span v-else :class="['w-1 h-5 rounded-full flex-shrink-0 mt-0.5', priorityBar]" aria-hidden="true" />
         <p
           :class="[
             'text-sm font-medium leading-snug flex-1',
@@ -22,6 +34,15 @@
           ]"
         >
           {{ task.title }}
+          <span
+            v-if="task.recurrence"
+            class="inline-flex items-center align-middle ml-0.5 text-brand-500 dark:text-brand-400"
+            :title="describeRecurrence(task.recurrence)"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182M20.015 4.652v4.992" />
+            </svg>
+          </span>
         </p>
       </div>
 
@@ -112,12 +133,27 @@
 <script setup>
 import { computed, ref, inject } from 'vue';
 import { startTouchDrag, touchDragState } from '@/composables/useTouchDragDrop';
+import { describeRecurrence } from '@/utils/recurrence';
+import { useTasksStore } from '@/stores/tasks';
 
 const props = defineProps({
   task: { type: Object, required: true },
   statusColor: { type: String, default: '#a1a1aa' },
 });
 defineEmits(['edit', 'delete']);
+
+const tasksStore = useTasksStore();
+const completing = ref(false);
+
+async function completeOccurrence() {
+  if (completing.value) return;
+  completing.value = true;
+  try {
+    await tasksStore.completeOccurrence(props.task._id);
+  } finally {
+    completing.value = false;
+  }
+}
 
 const touchDragging = computed(() => touchDragState.dragging && touchDragState.taskId === props.task._id);
 

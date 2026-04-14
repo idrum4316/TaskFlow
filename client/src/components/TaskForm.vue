@@ -150,6 +150,145 @@
                 </label>
               </div>
 
+              <!-- Recurrence -->
+              <div v-if="form.due_date">
+                <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-1.5">Repeat</label>
+                <div class="space-y-2">
+                  <div class="relative">
+                    <select
+                      v-model="recurrenceType"
+                      :disabled="readOnly"
+                      class="appearance-none w-full text-xs font-medium px-3 py-1.5 rounded-full border bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 cursor-pointer disabled:cursor-default focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                    >
+                      <option v-for="t in RECURRENCE_TYPES" :key="t.value" :value="t.value">{{ t.label }}</option>
+                    </select>
+                    <svg class="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                  </div>
+
+                  <!-- Interval (for all types except null) -->
+                  <div v-if="recurrenceType" class="flex items-center gap-2">
+                    <label class="text-[11px] text-zinc-500 dark:text-zinc-400 whitespace-nowrap">Every</label>
+                    <input
+                      v-model.number="recurrenceInterval"
+                      type="number"
+                      min="1"
+                      :disabled="readOnly"
+                      class="w-14 text-xs font-medium px-2 py-1 rounded-md border bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                    />
+                    <span class="text-[11px] text-zinc-500 dark:text-zinc-400">
+                      {{ recurrenceType === 'custom' ? '' : recurrenceType === 'daily' ? 'day(s)' : recurrenceType === 'weekly' ? 'week(s)' : 'month(s)' }}
+                    </span>
+                    <!-- Unit selector for custom -->
+                    <select
+                      v-if="recurrenceType === 'custom'"
+                      v-model="recurrenceUnit"
+                      :disabled="readOnly"
+                      class="text-xs font-medium px-2 py-1 rounded-md border bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                    >
+                      <option v-for="u in UNIT_OPTIONS" :key="u.value" :value="u.value">{{ u.label }}</option>
+                    </select>
+                  </div>
+
+                  <!-- Day of week checkboxes for weekly -->
+                  <div v-if="recurrenceType === 'weekly'" class="flex flex-wrap gap-1">
+                    <button
+                      v-for="(label, idx) in DAY_LABELS"
+                      :key="idx"
+                      type="button"
+                      :disabled="readOnly"
+                      @click="toggleDayOfWeek(idx)"
+                      :class="[
+                        'text-[10px] font-semibold w-7 h-7 rounded-full transition-colors',
+                        recurrenceDaysOfWeek.includes(idx)
+                          ? 'bg-brand-600 text-white'
+                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700',
+                      ]"
+                    >
+                      {{ label.charAt(0) }}
+                    </button>
+                  </div>
+
+                  <!-- Day of month for monthly -->
+                  <div v-if="recurrenceType === 'monthly'" class="flex items-center gap-2">
+                    <label class="text-[11px] text-zinc-500 dark:text-zinc-400">on day</label>
+                    <input
+                      v-model.number="recurrenceDayOfMonth"
+                      type="number"
+                      min="1"
+                      max="31"
+                      :disabled="readOnly"
+                      class="w-14 text-xs font-medium px-2 py-1 rounded-md border bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                    />
+                  </div>
+
+                  <!-- End date -->
+                  <div v-if="recurrenceType" class="flex items-center gap-2">
+                    <label class="text-[11px] text-zinc-500 dark:text-zinc-400 whitespace-nowrap">Until</label>
+                    <input
+                      v-model="recurrenceEndDate"
+                      type="date"
+                      :disabled="readOnly"
+                      class="flex-1 text-xs font-medium px-2 py-1 rounded-md border bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                      placeholder="No end date"
+                    />
+                  </div>
+                </div>
+
+                <!-- Completion history (for existing recurring tasks) -->
+                <div v-if="task && (task.recurrence || task.completion_count)" class="mt-3">
+                  <!-- Complete occurrence button -->
+                  <button
+                    v-if="task.recurrence && form.due_date && !readOnly"
+                    type="button"
+                    @click="completeOccurrence"
+                    :disabled="completingOccurrence"
+                    class="flex items-center gap-1.5 w-full text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-600 rounded-lg px-3 py-2 transition-colors disabled:opacity-50 mb-2"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                    {{ completingOccurrence ? 'Completing…' : 'Complete this occurrence' }}
+                  </button>
+
+                  <button
+                    type="button"
+                    @click="toggleCompletionHistory"
+                    class="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                  >
+                    <svg :class="['w-3 h-3 transition-transform', showCompletionHistory ? 'rotate-90' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
+                    Completion history
+                    <span v-if="task.completion_count" class="text-[10px] text-zinc-400 dark:text-zinc-500">({{ task.completion_count }})</span>
+                  </button>
+                  <div v-if="showCompletionHistory" class="mt-2 space-y-1 max-h-40 overflow-y-auto">
+                    <p v-if="completionsLoading && !completions.length" class="text-[11px] text-zinc-400">Loading…</p>
+                    <div
+                      v-for="c in completions"
+                      :key="c._id"
+                      class="flex items-center gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400"
+                    >
+                      <svg class="w-3 h-3 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      </svg>
+                      <span>{{ formatCompletionDate(c.completed_at) }}</span>
+                      <span class="text-zinc-400 dark:text-zinc-600">·</span>
+                      <span>due {{ formatDueDate(c.due_date) }}</span>
+                    </div>
+                    <p v-if="!completionsLoading && !completions.length" class="text-[11px] text-zinc-400 italic">No completions yet</p>
+                    <button
+                      v-if="completionsHasMore"
+                      type="button"
+                      @click="completionsStore.loadMore(task._id)"
+                      :disabled="completionsLoading"
+                      class="text-[11px] font-medium text-brand-600 dark:text-brand-400 hover:underline"
+                    >
+                      Load more
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <!-- Labels -->
               <div v-if="labels.length">
                 <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-1.5">Labels</label>
@@ -260,6 +399,45 @@
         <div>
           <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" for="new-task-due">Due Date</label>
           <input id="new-task-due" v-model="form.due_date" type="date" class="input" />
+        </div>
+
+        <!-- Recurrence (new task) -->
+        <div v-if="form.due_date">
+          <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">Repeat</label>
+          <div class="space-y-2">
+            <select v-model="recurrenceType" class="input">
+              <option v-for="t in RECURRENCE_TYPES" :key="t.value" :value="t.value">{{ t.label }}</option>
+            </select>
+
+            <div v-if="recurrenceType" class="flex items-center gap-2">
+              <label class="text-xs text-zinc-500 dark:text-zinc-400">Every</label>
+              <input v-model.number="recurrenceInterval" type="number" min="1" class="w-16 input text-sm" />
+              <span v-if="recurrenceType !== 'custom'" class="text-xs text-zinc-500 dark:text-zinc-400">
+                {{ recurrenceType === 'daily' ? 'day(s)' : recurrenceType === 'weekly' ? 'week(s)' : 'month(s)' }}
+              </span>
+              <select v-if="recurrenceType === 'custom'" v-model="recurrenceUnit" class="input text-sm">
+                <option v-for="u in UNIT_OPTIONS" :key="u.value" :value="u.value">{{ u.label }}</option>
+              </select>
+            </div>
+
+            <div v-if="recurrenceType === 'weekly'" class="flex flex-wrap gap-1">
+              <button
+                v-for="(label, idx) in DAY_LABELS" :key="idx"
+                type="button" @click="toggleDayOfWeek(idx)"
+                :class="['text-xs font-semibold w-8 h-8 rounded-full transition-colors', recurrenceDaysOfWeek.includes(idx) ? 'bg-brand-600 text-white' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700']"
+              >{{ label.charAt(0) }}</button>
+            </div>
+
+            <div v-if="recurrenceType === 'monthly'" class="flex items-center gap-2">
+              <label class="text-xs text-zinc-500 dark:text-zinc-400">on day</label>
+              <input v-model.number="recurrenceDayOfMonth" type="number" min="1" max="31" class="w-16 input text-sm" />
+            </div>
+
+            <div v-if="recurrenceType" class="flex items-center gap-2">
+              <label class="text-xs text-zinc-500 dark:text-zinc-400">Until</label>
+              <input v-model="recurrenceEndDate" type="date" class="flex-1 input text-sm" />
+            </div>
+          </div>
         </div>
 
         <!-- Labels -->
@@ -390,6 +568,9 @@ import TaskAttachments from './TaskAttachments.vue';
 import ConfirmDialog from './ConfirmDialog.vue';
 import { useCommentsStore } from '@/stores/comments';
 import { useAttachmentsStore } from '@/stores/attachments';
+import { useCompletionsStore } from '@/stores/completions';
+import { useTasksStore } from '@/stores/tasks';
+import { describeRecurrence } from '@/utils/recurrence';
 import { storeToRefs } from 'pinia';
 
 const props = defineProps({
@@ -456,7 +637,107 @@ const form = reactive({
   priority: props.task?.priority || 'medium',
   due_date: props.task?.due_date || '',
   labels: props.task?.labels || [],
+  recurrence: props.task?.recurrence || null,
 });
+
+const RECURRENCE_TYPES = [
+  { value: null, label: 'Does not repeat' },
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'custom', label: 'Custom' },
+];
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const UNIT_OPTIONS = [
+  { value: 'days', label: 'Days' },
+  { value: 'weeks', label: 'Weeks' },
+  { value: 'months', label: 'Months' },
+];
+
+const recurrenceType = ref(props.task?.recurrence?.type || null);
+const recurrenceInterval = ref(props.task?.recurrence?.interval || 1);
+const recurrenceDaysOfWeek = ref(props.task?.recurrence?.daysOfWeek || []);
+const recurrenceDayOfMonth = ref(props.task?.recurrence?.dayOfMonth || 1);
+const recurrenceUnit = ref(props.task?.recurrence?.unit || 'days');
+const recurrenceEndDate = ref(props.task?.recurrence?.endDate || '');
+
+function buildRecurrence() {
+  if (!recurrenceType.value) return null;
+  const rule = { type: recurrenceType.value, interval: recurrenceInterval.value };
+  if (recurrenceType.value === 'weekly' && recurrenceDaysOfWeek.value.length) {
+    rule.daysOfWeek = [...recurrenceDaysOfWeek.value];
+  }
+  if (recurrenceType.value === 'monthly') {
+    rule.dayOfMonth = recurrenceDayOfMonth.value;
+  }
+  if (recurrenceType.value === 'custom') {
+    rule.unit = recurrenceUnit.value;
+  }
+  if (recurrenceEndDate.value) {
+    rule.endDate = recurrenceEndDate.value;
+  }
+  return rule;
+}
+
+function syncRecurrenceToForm() {
+  form.recurrence = buildRecurrence();
+  if (props.task) autoSaveMetadata();
+}
+
+watch(recurrenceType, syncRecurrenceToForm);
+watch(recurrenceInterval, syncRecurrenceToForm);
+watch(recurrenceDaysOfWeek, syncRecurrenceToForm, { deep: true });
+watch(recurrenceDayOfMonth, syncRecurrenceToForm);
+watch(recurrenceUnit, syncRecurrenceToForm);
+watch(recurrenceEndDate, syncRecurrenceToForm);
+
+// Completion history
+const completionsStore = useCompletionsStore();
+const tasksStore = useTasksStore();
+const { completions, loading: completionsLoading, hasMore: completionsHasMore } = storeToRefs(completionsStore);
+const showCompletionHistory = ref(false);
+const completingOccurrence = ref(false);
+
+async function completeOccurrence() {
+  if (completingOccurrence.value || !props.task?._id) return;
+  completingOccurrence.value = true;
+  try {
+    const updated = await tasksStore.completeOccurrence(props.task._id);
+    // Refresh form with updated task data
+    if (updated.due_date) form.due_date = updated.due_date;
+    if (updated.recurrence) {
+      syncRecurrenceFields(updated.recurrence);
+    } else {
+      recurrenceType.value = '';
+    }
+    // Refresh completion history if it's open
+    if (showCompletionHistory.value) {
+      completionsStore.fetchCompletions(props.task._id);
+    }
+  } finally {
+    completingOccurrence.value = false;
+  }
+}
+
+function syncRecurrenceFields(rule) {
+  recurrenceType.value = rule.type || '';
+  recurrenceInterval.value = rule.interval || 1;
+  recurrenceDaysOfWeek.value = rule.daysOfWeek || [];
+  recurrenceDayOfMonth.value = rule.dayOfMonth || 1;
+  recurrenceUnit.value = rule.unit || 'days';
+  recurrenceEndDate.value = rule.endDate || '';
+}
+
+function toggleCompletionHistory() {
+  showCompletionHistory.value = !showCompletionHistory.value;
+  if (showCompletionHistory.value && props.task?._id) {
+    completionsStore.fetchCompletions(props.task._id);
+  }
+}
+
+function formatCompletionDate(dateStr) {
+  return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
 
 const showLabelPicker = ref(false);
 
@@ -472,6 +753,13 @@ function toggleLabel(labelId) {
   if (idx >= 0) form.labels.splice(idx, 1);
   else form.labels.push(labelId);
   if (props.task) autoSaveMetadata();
+}
+
+function toggleDayOfWeek(day) {
+  if (props.readOnly) return;
+  const idx = recurrenceDaysOfWeek.value.indexOf(day);
+  if (idx >= 0) recurrenceDaysOfWeek.value.splice(idx, 1);
+  else recurrenceDaysOfWeek.value.push(day);
 }
 
 const priorityPillClass = computed(() => ({
@@ -504,7 +792,7 @@ function autoSaveMetadata() {
   autoSaving.value = true;
   errorMsg.value = '';
   try {
-    emit('auto-save', { ...form, due_date: form.due_date || null });
+    emit('auto-save', { ...form, due_date: form.due_date || null, recurrence: form.recurrence });
   } catch (err) {
     errorMsg.value = err.response?.data?.error || 'Auto-save failed';
   } finally {
@@ -536,7 +824,7 @@ async function handleSubmit() {
   errorMsg.value = '';
   saving.value = true;
   try {
-    await emit('save', { ...form, due_date: form.due_date || null });
+    await emit('save', { ...form, due_date: form.due_date || null, recurrence: form.recurrence });
   } catch (err) {
     errorMsg.value = err.response?.data?.error || 'Failed to save task';
     saving.value = false;

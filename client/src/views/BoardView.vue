@@ -245,6 +245,7 @@
         :tasks="filteredTasks"
         :loading="tasksStore.loading"
         :statuses="boardStatuses"
+        :board-id="boardId"
         @edit="openEdit"
         @add="openCreate"
         @due-date-change="handleDueDateChange"

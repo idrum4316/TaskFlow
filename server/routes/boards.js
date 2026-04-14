@@ -172,4 +172,42 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// GET /api/boards/:id/completions?from=YYYY-MM-DD&to=YYYY-MM-DD
+router.get('/:id/completions', async (req, res) => {
+  const boardId = req.params.id;
+  const { from, to } = req.query;
+  if (!from || !to) {
+    return res.status(400).json({ error: 'from and to query params are required (YYYY-MM-DD)' });
+  }
+
+  const boardsDb = getBoardsDb();
+  let board;
+  try {
+    board = await boardsDb.get(boardId);
+  } catch (err) {
+    if (err.statusCode === 404) return res.status(404).json({ error: 'Board not found' });
+    return res.status(500).json({ error: 'Failed to fetch board' });
+  }
+
+  // Check access
+  if (board.user_id !== req.user.sub) {
+    const share = (board.shares || []).find(
+      (s) => s.user_id === req.user.sub && s.status === 'accepted'
+    );
+    if (!share) return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  try {
+    const tasksDb = getTasksDb();
+    const { rows } = await tasksDb.view('tasks', 'completions_by_board', {
+      startkey: [boardId, from],
+      endkey: [boardId, to],
+      include_docs: true,
+    });
+    res.json(rows.map((r) => r.doc));
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch completions' });
+  }
+});
+
 module.exports = router;

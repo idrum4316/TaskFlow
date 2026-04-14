@@ -68,5 +68,13 @@ export const useTasksStore = defineStore('tasks', () => {
     tasks.value = tasks.value.filter((t) => t._id !== id);
   }
 
-  return { tasks, loading, error, fetchTasks, createTask, updateTask, reorderTask, deleteTask, clearTasks, sortByPosition };
+  async function completeOccurrence(id) {
+    const { data } = await api.post(`/tasks/${id}/complete-occurrence`);
+    const index = tasks.value.findIndex((t) => t._id === id);
+    if (index !== -1) tasks.value[index] = data;
+    sortByPosition();
+    return data;
+  }
+
+  return { tasks, loading, error, fetchTasks, createTask, updateTask, reorderTask, deleteTask, completeOccurrence, clearTasks, sortByPosition };
 });
