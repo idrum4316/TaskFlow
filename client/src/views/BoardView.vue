@@ -68,6 +68,17 @@
             Notes
           </button>
 
+          <button
+            v-if="isOwner"
+            @click="showBoardSettings = true"
+            class="hidden md:flex items-center gap-1.5 text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+            </svg>
+            Settings
+          </button>
+
           <!-- Mobile notes button (all users, < md) -->
           <button
             @click="showNotes = true"
@@ -133,6 +144,15 @@
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                 </svg>
                 Notes
+              </button>
+              <button
+                @click="showBoardSettings = true; showBoardMenu = false"
+                class="flex items-center gap-2.5 w-full text-left text-sm text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 px-3 py-2.5 transition-colors"
+              >
+                <svg class="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+                </svg>
+                Settings
               </button>
             </div>
           </div>
@@ -246,6 +266,7 @@
         :loading="tasksStore.loading"
         :statuses="boardStatuses"
         :board-id="boardId"
+        :initial-mode="board?.default_calendar_mode"
         @edit="openEdit"
         @add="openCreate"
         @due-date-change="handleDueDateChange"
@@ -304,6 +325,16 @@
       :save-fn="handleSaveLabels"
       @close="showLabelManager = false"
     />
+
+    <!-- Board settings modal -->
+    <BoardSettingsModal
+      v-if="showBoardSettings && board"
+      :board-id="board._id"
+      :current-view="board.default_view || 'kanban'"
+      :current-calendar-mode="board.default_calendar_mode || 'month'"
+      :save-fn="handleSaveSettings"
+      @close="showBoardSettings = false"
+    />
   </div>
 </template>
 
@@ -322,6 +353,7 @@ import ShareBoardModal from '@/components/ShareBoardModal.vue';
 import BoardNotes from '@/components/BoardNotes.vue';
 import StatusManager from '@/components/StatusManager.vue';
 import LabelManager from '@/components/LabelManager.vue';
+import BoardSettingsModal from '@/components/BoardSettingsModal.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import { useBoardEvents } from '@/composables/useBoardEvents';
 
@@ -355,6 +387,7 @@ provide('doneStatusIds', doneStatusIds);
 const showShareModal = ref(false);
 const showStatusManager = ref(false);
 const showLabelManager = ref(false);
+const showBoardSettings = ref(false);
 const showNotes = ref(false);
 const showBoardMenu = ref(false);
 const showDeleteConfirm = ref(false);
@@ -370,7 +403,9 @@ const boardStatuses = computed(() => board.value?.statuses || DEFAULT_STATUSES);
 
 const activeView = computed(() => {
   const v = route.query.view;
-  return ['kanban', 'list', 'calendar'].includes(v) ? v : 'kanban';
+  if (['kanban', 'list', 'calendar'].includes(v)) return v;
+  const def = board.value?.default_view;
+  return ['kanban', 'list', 'calendar'].includes(def) ? def : 'kanban';
 });
 
 function setView(id) {
@@ -550,5 +585,9 @@ async function handleSaveStatuses({ statuses, reassignments }) {
 
 async function handleSaveLabels({ labels }) {
   await boardsStore.updateBoard(board.value._id, { name: board.value.name, labels });
+}
+
+async function handleSaveSettings({ default_view, default_calendar_mode }) {
+  await boardsStore.updateBoard(board.value._id, { name: board.value.name, default_view, default_calendar_mode });
 }
 </script>

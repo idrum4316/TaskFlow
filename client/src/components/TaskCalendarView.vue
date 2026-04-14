@@ -276,6 +276,7 @@ const props = defineProps({
   loading: { type: Boolean, default: false },
   statuses: { type: Array, default: () => [] },
   boardId: { type: String, default: null },
+  initialMode: { type: String, default: null },
 });
 
 const emit = defineEmits(['edit', 'add', 'due-date-change']);
@@ -313,7 +314,7 @@ const MONTH_NAMES_SHORT = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
 
-const viewMode = ref('month');
+const viewMode = ref(props.initialMode === 'week' ? 'week' : 'month');
 const today = new Date();
 const month = ref(today.getMonth());
 const year = ref(today.getFullYear());

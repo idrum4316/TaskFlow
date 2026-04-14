@@ -63,11 +63,25 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT /api/boards/:id — update board name, statuses, and/or labels (owner only)
+// Valid view identifiers for default_view
+const VALID_VIEWS = ['kanban', 'list', 'calendar'];
+const VALID_CALENDAR_MODES = ['month', 'week'];
+
+// PUT /api/boards/:id — update board name, statuses, labels, and/or default_view (owner only)
 router.put('/:id', async (req, res) => {
-  const { name, statuses, labels } = req.body;
+  const { name, statuses, labels, default_view, default_calendar_mode } = req.body;
   if (!name || !name.trim()) {
     return res.status(400).json({ error: 'name is required' });
+  }
+
+  // Validate default_view if provided
+  if (default_view !== undefined && default_view !== null && !VALID_VIEWS.includes(default_view)) {
+    return res.status(400).json({ error: 'default_view must be one of: kanban, list, calendar' });
+  }
+
+  // Validate default_calendar_mode if provided
+  if (default_calendar_mode !== undefined && default_calendar_mode !== null && !VALID_CALENDAR_MODES.includes(default_calendar_mode)) {
+    return res.status(400).json({ error: 'default_calendar_mode must be one of: month, week' });
   }
 
   // Validate statuses if provided
@@ -126,6 +140,8 @@ router.put('/:id', async (req, res) => {
     name: name.trim(),
     ...(statuses !== undefined && { statuses }),
     ...(labels !== undefined && { labels }),
+    ...(default_view !== undefined && { default_view }),
+    ...(default_calendar_mode !== undefined && { default_calendar_mode }),
     updated_at: new Date().toISOString(),
   };
   try {
