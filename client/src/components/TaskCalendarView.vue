@@ -55,7 +55,7 @@
     </div>
 
     <!-- Day-of-week headers -->
-    <div class="grid grid-cols-7 flex-shrink-0">
+    <div :class="['grid-cols-7 flex-shrink-0', viewMode === 'week' ? 'hidden sm:grid' : 'grid']">
       <div
         v-for="(day, i) in weekdayHeaders"
         :key="i"
@@ -155,8 +155,8 @@
       </div>
     </div>
 
-    <!-- Week view grid -->
-    <div v-if="viewMode === 'week'" class="grid grid-cols-7 gap-px bg-zinc-200 dark:bg-zinc-700 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-700 flex-1 min-h-0">
+    <!-- Week view grid (desktop) -->
+    <div v-if="viewMode === 'week'" class="hidden sm:grid grid-cols-7 gap-px bg-zinc-200 dark:bg-zinc-700 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-700 flex-1 min-h-0">
       <div
         v-for="(cell, i) in weekCells"
         :key="i"
@@ -241,6 +241,107 @@
             </svg>
             <span class="truncate">{{ comp._taskTitle }}</span>
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile week view: day tabs + single-day panel -->
+    <div v-if="viewMode === 'week'" class="flex sm:hidden flex-col flex-1 min-h-0 gap-2">
+      <!-- Day selector tabs -->
+      <div class="grid grid-cols-7 gap-1 flex-shrink-0">
+        <button
+          v-for="(cell, i) in weekCells"
+          :key="i"
+          @click="selectedDayIdx = i"
+          :class="[
+            'flex flex-col items-center py-1.5 rounded-xl transition-colors',
+            selectedDayIdx === i ? 'bg-brand-600 text-white' : cell.isToday ? 'text-brand-600 dark:text-brand-400' : 'text-zinc-600 dark:text-zinc-400',
+          ]"
+        >
+          <span class="text-[10px] font-medium uppercase">{{ WEEKDAYS[weekDays[i].getDay()].slice(0, 1) }}</span>
+          <span class="text-base font-bold tabular-nums leading-tight">{{ cell.day }}</span>
+          <span
+            :class="['w-1.5 h-1.5 rounded-full mt-0.5', selectedDayIdx === i ? 'bg-white/60' : 'bg-brand-500']"
+            :style="{ visibility: (cell.tasks.length || cell.ghosts.length || cell.completions.length) ? 'visible' : 'hidden' }"
+          ></span>
+        </button>
+      </div>
+
+      <!-- Selected day panel -->
+      <div
+        :class="[
+          'flex flex-col rounded-2xl border overflow-hidden flex-1 min-h-0',
+          selectedCell.isToday ? 'bg-brand-50 dark:bg-brand-950/30 border-brand-200 dark:border-brand-800/50' : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700',
+          dropTarget === cellKey(selectedCell) ? 'ring-2 ring-inset ring-brand-500' : '',
+        ]"
+        @dragover.prevent="onDragOver(cellKey(selectedCell))"
+        @dragleave="onDragLeave"
+        @drop.prevent="onDropCell(selectedCell)"
+      >
+        <div class="flex flex-col gap-2 overflow-y-auto p-3 min-h-0">
+          <button
+            v-for="task in selectedCell.tasks"
+            :key="task._id"
+            draggable="true"
+            @dragstart="onDragStart(task, $event)"
+            @dragend="onDragEnd"
+            @click="$emit('edit', task)"
+            :class="[
+              'text-left text-sm px-3 py-2 rounded-lg w-full transition-colors cursor-grab active:cursor-grabbing flex items-center gap-2',
+              taskChipClass(task),
+              isDoneStatus(task.status) ? 'line-through' : '',
+            ]"
+            :style="taskChipStyle(task)"
+            :title="task.title"
+          >
+            <button
+              v-if="task.recurrence"
+              @click.stop="completeOccurrence(task, $event)"
+              :disabled="completingId === task._id"
+              class="group/complete w-6 h-6 flex-shrink-0 rounded-full border border-white/40 dark:border-white/30 flex items-center justify-center hover:border-white/80 hover:bg-white/30 dark:hover:bg-black/20 hover:scale-110 transition-all duration-150 disabled:opacity-50"
+              title="Mark complete"
+            >
+              <svg class="w-3 h-3 opacity-0 group-hover/complete:opacity-100 transition-opacity duration-150" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+            </button>
+            <svg v-if="task.recurrence" class="w-4 h-4 flex-shrink-0 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182M20.015 4.652v4.992" />
+            </svg>
+            <span class="truncate">{{ task.title }}</span>
+          </button>
+          <!-- Ghost chips -->
+          <div
+            v-for="ghost in selectedCell.ghosts"
+            :key="'ghost-' + ghost._id"
+            class="text-left text-sm px-3 py-2 rounded-lg w-full flex items-center gap-2 opacity-40 border border-dashed border-zinc-300 dark:border-zinc-600 text-zinc-400 dark:text-zinc-500"
+            :title="ghost.title + ' (projected)'"
+          >
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182M20.015 4.652v4.992" />
+            </svg>
+            <span class="truncate">{{ ghost.title }}</span>
+          </div>
+          <!-- Completion ghost chips -->
+          <button
+            v-for="comp in selectedCell.completions"
+            :key="'comp-' + comp._id"
+            :class="['text-left text-sm px-3 py-2 rounded-lg w-full flex items-center gap-2 opacity-75 line-through cursor-pointer', taskChipClass(comp)]"
+            :style="taskChipStyle(comp)"
+            :title="comp._taskTitle + ' (completed)'"
+            @click="taskMap[comp.task_id] && $emit('edit', taskMap[comp.task_id])"
+          >
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+            <span class="truncate">{{ comp._taskTitle }}</span>
+          </button>
+          <div
+            v-if="!selectedCell.tasks.length && !selectedCell.ghosts.length && !selectedCell.completions.length"
+            class="flex-1 flex items-center justify-center py-8 text-sm text-zinc-400 dark:text-zinc-500"
+          >
+            No tasks
+          </div>
         </div>
       </div>
     </div>
@@ -562,6 +663,15 @@ const weekCells = computed(() => {
     };
   });
 });
+
+// Selected day for mobile week view (day-tab picker)
+const selectedDayIdx = ref(0);
+const selectedCell = computed(() => weekCells.value[selectedDayIdx.value] ?? weekCells.value[0]);
+watch(weekStart, () => {
+  const todayStr = formatDate(today);
+  const idx = weekDays.value.findIndex((d) => formatDate(d) === todayStr);
+  selectedDayIdx.value = idx >= 0 ? idx : 0;
+}, { immediate: true });
 
 function cellKey(cell) {
   return cell.dateStr || `${year.value}-${String(month.value + 1).padStart(2, '0')}-${String(cell.day).padStart(2, '0')}`;
