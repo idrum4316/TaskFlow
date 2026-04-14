@@ -140,7 +140,8 @@
             <div
               v-for="comp in cell.completions"
               :key="'comp-' + comp._id"
-              class="text-left text-xs px-1.5 py-0.5 rounded-md truncate w-full flex items-center gap-0.5 opacity-50 border border-dashed border-emerald-300 dark:border-emerald-700 text-emerald-500 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20"
+              :class="['text-left text-xs px-1.5 py-0.5 rounded-md truncate w-full flex items-center gap-0.5 opacity-75 line-through', taskChipClass(comp)]"
+              :style="taskChipStyle(comp)"
               :title="comp._taskTitle + ' (completed)'"
             >
               <svg class="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
@@ -229,7 +230,8 @@
           <div
             v-for="comp in cell.completions"
             :key="'comp-' + comp._id"
-            class="text-left text-xs px-2 py-1 rounded-md w-full flex items-center gap-1 opacity-50 border border-dashed border-emerald-300 dark:border-emerald-700 text-emerald-500 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20"
+            :class="['text-left text-xs px-2 py-1 rounded-md w-full flex items-center gap-1 opacity-75 line-through', taskChipClass(comp)]"
+            :style="taskChipStyle(comp)"
             :title="comp._taskTitle + ' (completed)'"
           >
             <svg class="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
@@ -469,7 +471,7 @@ const completionsByDay = computed(() => {
     if (y === year.value && m === month.value) {
       if (!map[d]) map[d] = [];
       const task = taskMap.value[c.task_id];
-      map[d].push({ ...c, _taskTitle: task?.title || 'Completed task' });
+      map[d].push({ ...c, _taskTitle: task?.title || 'Completed task', status: task?.status, priority: task?.priority });
     }
   }
   return map;
@@ -535,7 +537,7 @@ const completionsByDate = computed(() => {
     const dateKey = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, '0')}-${String(localDate.getDate()).padStart(2, '0')}`;
     if (!map[dateKey]) map[dateKey] = [];
     const task = taskMap.value[c.task_id];
-    map[dateKey].push({ ...c, _taskTitle: task?.title || 'Completed task' });
+    map[dateKey].push({ ...c, _taskTitle: task?.title || 'Completed task', status: task?.status, priority: task?.priority });
   }
   return map;
 });
