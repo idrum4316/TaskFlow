@@ -387,17 +387,20 @@ const weekdayHeaders = computed(() => {
 // Fetch board completions whenever month/year/boardId/week changes
 function fetchCompletions() {
   if (!props.boardId) return;
-  let from, to;
+  let fromLocal, toLocal;
   if (viewMode.value === 'week') {
     const start = weekDays.value[0];
     const end = weekDays.value[6];
-    from = formatDate(start);
-    to = formatDate(end);
+    fromLocal = formatDate(start);
+    toLocal = formatDate(end);
   } else {
     const daysInMonth = new Date(year.value, month.value + 1, 0).getDate();
-    from = `${year.value}-${String(month.value + 1).padStart(2, '0')}-01`;
-    to = `${year.value}-${String(month.value + 1).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
+    fromLocal = `${year.value}-${String(month.value + 1).padStart(2, '0')}-01`;
+    toLocal = `${year.value}-${String(month.value + 1).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
   }
+  // Convert local date boundaries to UTC ISO timestamps
+  const from = new Date(fromLocal + 'T00:00:00').toISOString();
+  const to = new Date(toLocal + 'T23:59:59.999').toISOString();
   completionsStore.fetchBoardCompletions(props.boardId, from, to);
 }
 
@@ -454,13 +457,16 @@ const taskMap = computed(() => {
   return map;
 });
 
-// Completion ghosts: past completed occurrences keyed by day
+// Completion ghosts: past completed occurrences keyed by day (using local date from completed_at)
 const completionsByDay = computed(() => {
   const map = {};
   for (const c of boardCompletions.value) {
-    if (!c.due_date) continue;
-    const [y, m, d] = c.due_date.split('T')[0].split('-').map(Number);
-    if (y === year.value && m - 1 === month.value) {
+    if (!c.completed_at) continue;
+    const localDate = new Date(c.completed_at);
+    const y = localDate.getFullYear();
+    const m = localDate.getMonth();
+    const d = localDate.getDate();
+    if (y === year.value && m === month.value) {
       if (!map[d]) map[d] = [];
       const task = taskMap.value[c.task_id];
       map[d].push({ ...c, _taskTitle: task?.title || 'Completed task' });
@@ -524,8 +530,9 @@ const ghostsByDate = computed(() => {
 const completionsByDate = computed(() => {
   const map = {};
   for (const c of boardCompletions.value) {
-    if (!c.due_date) continue;
-    const dateKey = c.due_date.split('T')[0];
+    if (!c.completed_at) continue;
+    const localDate = new Date(c.completed_at);
+    const dateKey = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, '0')}-${String(localDate.getDate()).padStart(2, '0')}`;
     if (!map[dateKey]) map[dateKey] = [];
     const task = taskMap.value[c.task_id];
     map[dateKey].push({ ...c, _taskTitle: task?.title || 'Completed task' });

@@ -76,11 +76,11 @@ const TASK_DESIGN_DOC = {
         }
       }`,
     },
-    // Completions for a board, keyed by [board_id, due_date]
+    // Completions for a board, keyed by [board_id, completed_at]
     completions_by_board: {
       map: `function (doc) {
         if (doc.type === 'completion') {
-          emit([doc.board_id, doc.due_date], null);
+          emit([doc.board_id, doc.completed_at], null);
         }
       }`,
     },

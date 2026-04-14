@@ -172,12 +172,12 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// GET /api/boards/:id/completions?from=YYYY-MM-DD&to=YYYY-MM-DD
+// GET /api/boards/:id/completions?from=<ISO>&to=<ISO>
 router.get('/:id/completions', async (req, res) => {
   const boardId = req.params.id;
   const { from, to } = req.query;
   if (!from || !to) {
-    return res.status(400).json({ error: 'from and to query params are required (YYYY-MM-DD)' });
+    return res.status(400).json({ error: 'from and to query params are required (ISO timestamps)' });
   }
 
   const boardsDb = getBoardsDb();
