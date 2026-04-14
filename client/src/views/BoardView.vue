@@ -168,7 +168,7 @@
       </div>
 
       <!-- Row 2: View switcher + label filter -->
-      <div class="flex items-center gap-2 px-4 sm:px-6 pb-2.5 flex-wrap">
+      <div class="flex flex-col sm:flex-row sm:items-center gap-2 px-4 sm:px-6 pb-2.5">
         <div
           class="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1"
           role="tablist"
@@ -194,7 +194,7 @@
         </div>
 
         <!-- Label filter -->
-        <div v-if="boardLabels.length" class="flex items-center gap-1.5 ml-1">
+        <div v-if="boardLabels.length" class="flex items-center gap-1.5 sm:ml-1 overflow-x-auto scrollbar-none min-w-0">
           <svg class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
           </svg>
@@ -204,7 +204,7 @@
             type="button"
             @click="toggleLabelFilter(l.id)"
             :class="[
-              'inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full border transition-colors',
+              'inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full border transition-colors flex-shrink-0',
               selectedLabels.has(l.id)
                 ? 'border-transparent text-white shadow-sm'
                 : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600',

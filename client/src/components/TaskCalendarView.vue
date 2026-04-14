@@ -112,10 +112,10 @@
                 v-if="task.recurrence"
                 @click.stop="completeOccurrence(task, $event)"
                 :disabled="completingId === task._id"
-                class="w-3.5 h-3.5 flex-shrink-0 rounded-full border border-current flex items-center justify-center hover:bg-white/30 dark:hover:bg-black/20 transition-colors disabled:opacity-50"
-                title="Complete this occurrence"
+                class="group/complete w-4 h-4 flex-shrink-0 rounded-full border border-white/40 dark:border-white/30 flex items-center justify-center hover:border-white/80 hover:bg-white/30 dark:hover:bg-black/20 hover:scale-110 transition-all duration-150 disabled:opacity-50"
+                title="Mark complete"
               >
-                <svg class="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4" aria-hidden="true">
+                <svg class="w-2.5 h-2.5 opacity-0 group-hover/complete:opacity-100 transition-opacity duration-150" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 </svg>
               </button>
@@ -137,18 +137,19 @@
               <span class="truncate">{{ ghost.title }}</span>
             </div>
             <!-- Completion ghost chips (past completed occurrences) -->
-            <div
+            <button
               v-for="comp in cell.completions"
               :key="'comp-' + comp._id"
-              :class="['text-left text-xs px-1.5 py-0.5 rounded-md truncate w-full flex items-center gap-0.5 opacity-75 line-through', taskChipClass(comp)]"
+              :class="['text-left text-xs px-1.5 py-0.5 rounded-md truncate w-full flex items-center gap-0.5 opacity-75 line-through cursor-pointer', taskChipClass(comp)]"
               :style="taskChipStyle(comp)"
               :title="comp._taskTitle + ' (completed)'"
+              @click="taskMap[comp.task_id] && $emit('edit', taskMap[comp.task_id])"
             >
               <svg class="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
               <span class="truncate">{{ comp._taskTitle }}</span>
-            </div>
+            </button>
           </div>
         </template>
       </div>
@@ -202,14 +203,14 @@
               v-if="task.recurrence"
               @click.stop="completeOccurrence(task, $event)"
               :disabled="completingId === task._id"
-              class="w-3.5 h-3.5 flex-shrink-0 rounded-full border border-current flex items-center justify-center hover:bg-white/30 dark:hover:bg-black/20 transition-colors disabled:opacity-50"
-              title="Complete this occurrence"
+              class="group/complete w-5 h-5 flex-shrink-0 rounded-full border border-white/40 dark:border-white/30 flex items-center justify-center hover:border-white/80 hover:bg-white/30 dark:hover:bg-black/20 hover:scale-110 transition-all duration-150 disabled:opacity-50"
+              title="Mark complete"
             >
-              <svg class="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4" aria-hidden="true">
+              <svg class="w-3 h-3 opacity-0 group-hover/complete:opacity-100 transition-opacity duration-150" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
             </button>
-            <svg v-if="task.recurrence" class="w-3 h-3 flex-shrink-0 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <svg v-if="task.recurrence" class="w-3.5 h-3.5 flex-shrink-0 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182M20.015 4.652v4.992" />
             </svg>
             <span class="truncate">{{ task.title }}</span>
@@ -227,18 +228,19 @@
             <span class="truncate">{{ ghost.title }}</span>
           </div>
           <!-- Completion ghost chips -->
-          <div
+          <button
             v-for="comp in cell.completions"
             :key="'comp-' + comp._id"
-            :class="['text-left text-xs px-2 py-1 rounded-md w-full flex items-center gap-1 opacity-75 line-through', taskChipClass(comp)]"
+            :class="['text-left text-xs px-2 py-1 rounded-md w-full flex items-center gap-1 opacity-75 line-through cursor-pointer', taskChipClass(comp)]"
             :style="taskChipStyle(comp)"
             :title="comp._taskTitle + ' (completed)'"
+            @click="taskMap[comp.task_id] && $emit('edit', taskMap[comp.task_id])"
           >
             <svg class="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
             </svg>
             <span class="truncate">{{ comp._taskTitle }}</span>
-          </div>
+          </button>
         </div>
       </div>
     </div>

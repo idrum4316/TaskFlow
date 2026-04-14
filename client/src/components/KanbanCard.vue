@@ -19,10 +19,10 @@
           v-if="task.recurrence && task.due_date"
           @click.stop="completeOccurrence"
           :disabled="completing"
-          class="w-5 h-5 mt-0.5 flex-shrink-0 rounded-full border-2 border-brand-400 dark:border-brand-500 flex items-center justify-center hover:bg-brand-100 dark:hover:bg-brand-900/40 transition-colors disabled:opacity-50"
-          :title="'Complete this occurrence'"
+          class="group/complete w-6 h-6 mt-0.5 flex-shrink-0 rounded-full border-2 border-zinc-300 dark:border-zinc-500 flex items-center justify-center cursor-pointer hover:border-brand-400 hover:bg-brand-50 dark:hover:border-brand-400 dark:hover:bg-brand-900/40 hover:scale-110 transition-all duration-150 disabled:opacity-50"
+          title="Mark complete"
         >
-          <svg class="w-3 h-3 text-brand-500 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true">
+          <svg class="w-3.5 h-3.5 text-brand-500 dark:text-brand-400 opacity-0 group-hover/complete:opacity-100 transition-opacity duration-150" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
           </svg>
         </button>
@@ -52,15 +52,20 @@
       </p>
 
       <!-- Labels -->
-      <div v-if="taskLabels.length" class="flex flex-wrap gap-1 mt-2 ml-3">
+      <div v-if="taskLabels.length" class="flex items-center flex-wrap gap-1 mt-2 ml-3">
         <span
-          v-for="l in taskLabels"
+          v-for="l in visibleLabels"
           :key="l.id"
-          class="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-full text-white leading-tight"
+          class="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-full text-white leading-tight flex-shrink-0"
           :style="{ backgroundColor: l.color }"
+          :title="l.name"
         >
           {{ l.name }}
         </span>
+        <span
+          v-if="hiddenLabelCount > 0"
+          class="text-[10px] font-medium text-zinc-400 dark:text-zinc-500 leading-tight"
+        >+{{ hiddenLabelCount }}</span>
       </div>
 
       <!-- Metadata row: due date, priority, indicators -->
@@ -175,6 +180,10 @@ const labelMap = computed(() => {
 const taskLabels = computed(() =>
   (props.task.labels || []).map((id) => labelMap.value[id]).filter(Boolean)
 );
+
+const LABEL_CAP = 4;
+const visibleLabels = computed(() => taskLabels.value.slice(0, LABEL_CAP));
+const hiddenLabelCount = computed(() => Math.max(0, taskLabels.value.length - LABEL_CAP));
 
 const dragging = ref(false);
 

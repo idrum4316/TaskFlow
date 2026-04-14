@@ -6,10 +6,10 @@
         v-if="task.recurrence && task.due_date"
         @click.stop="completeOccurrence"
         :disabled="completing"
-        class="w-5 h-5 rounded-full border-2 border-brand-400 dark:border-brand-500 flex items-center justify-center hover:bg-brand-100 dark:hover:bg-brand-900/40 transition-colors disabled:opacity-50"
-        :title="'Complete this occurrence'"
+        class="group/complete w-6 h-6 rounded-full border-2 border-gray-300 dark:border-zinc-500 flex items-center justify-center cursor-pointer hover:border-brand-400 hover:bg-brand-50 dark:hover:border-brand-400 dark:hover:bg-brand-900/40 hover:scale-110 transition-all duration-150 disabled:opacity-50"
+        title="Mark complete"
       >
-        <svg class="w-3 h-3 text-brand-500 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true">
+        <svg class="w-3.5 h-3.5 text-brand-500 dark:text-brand-400 opacity-0 group-hover/complete:opacity-100 transition-opacity duration-150" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
         </svg>
       </button>
