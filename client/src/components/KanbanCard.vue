@@ -8,8 +8,8 @@
     :data-task-id="task._id"
     :data-task-position="task.position ?? 0"
     class="flex-shrink-0 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200/80 dark:border-zinc-700/80 hover:border-zinc-300 dark:hover:border-zinc-600 transition-all duration-150 cursor-pointer group shadow-sm hover:shadow-md overflow-hidden border-l-[3px]"
-    :style="{ borderLeftColor: statusColor }"
-    :class="{ 'opacity-50': isDone, 'opacity-40 scale-[0.97]': dragging || touchDragging }"
+    :style="cardStyle"
+    :class="{ 'opacity-50': isDone, 'opacity-40 scale-[0.97]': dragging || touchDragging, 'critical-glow': isCritical }"
   >
     <div class="p-3">
       <!-- Priority accent + Title -->
@@ -206,22 +206,38 @@ function onDragStart(e) {
   e.dataTransfer.setData('taskId', props.task._id);
 }
 
+function hexToRgb(hex) {
+  const n = parseInt(hex.replace('#', ''), 16);
+  return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
+}
+
+const isCritical = computed(() => props.task.priority === 'critical' && !isDone.value);
+
+const cardStyle = computed(() => {
+  const s = { borderLeftColor: props.statusColor };
+  if (isCritical.value) s['--glow-rgb'] = hexToRgb(props.statusColor);
+  return s;
+});
+
 const priorityBar = computed(() => ({
   low: 'bg-zinc-300 dark:bg-zinc-600',
   medium: 'bg-amber-400',
   high: 'bg-rose-500',
+  critical: 'bg-violet-500',
 }[props.task.priority] || 'bg-zinc-300'));
 
 const priorityDot = computed(() => ({
   low: 'bg-zinc-400 dark:bg-zinc-500',
   medium: 'bg-amber-400',
   high: 'bg-rose-500',
+  critical: 'bg-violet-500',
 }[props.task.priority] || 'bg-zinc-400'));
 
 const priorityBadge = computed(() => ({
   low: 'bg-zinc-100 dark:bg-zinc-700/80 text-zinc-500 dark:text-zinc-400',
   medium: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
   high: 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400',
+  critical: 'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400',
 }[props.task.priority] || 'bg-zinc-100 dark:bg-zinc-700/80 text-zinc-500 dark:text-zinc-400'));
 
 const overdue = computed(() =>

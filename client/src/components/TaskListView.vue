@@ -80,10 +80,11 @@
             :data-task-id="task._id"
             :data-task-position="task.position ?? 0"
             class="flex items-center gap-3 bg-white dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700 rounded-xl px-4 py-3 hover:border-zinc-300 dark:hover:border-zinc-600 hover:shadow-card transition-all duration-150 group/row cursor-pointer border-l-[3px]"
-            :style="{ borderLeftColor: group.color }"
+            :style="listItemStyle(task, group.color)"
             :class="[
               isItemDragging(task._id) ? 'opacity-40' : '',
               dropTarget === group.status && dropListIndex === idx ? 'ring-t-2 ring-brand-500' : '',
+              task.priority === 'critical' && !isDoneStatus(task.status) ? 'critical-glow' : '',
             ]"
           >
             <!-- Priority bar / Recurrence checkbox -->
@@ -311,7 +312,18 @@ const groups = computed(() =>
 
 function toggleGroup(status) { collapsed[status] = !collapsed[status]; }
 
-const PRIORITY_BARS = { low: 'bg-zinc-300', medium: 'bg-amber-400', high: 'bg-rose-500' };
+function hexToRgb(hex) {
+  const n = parseInt(hex.replace('#', ''), 16);
+  return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
+}
+
+function listItemStyle(task, groupColor) {
+  const s = { borderLeftColor: groupColor };
+  if (task.priority === 'critical' && !isDoneStatus(task.status)) s['--glow-rgb'] = hexToRgb(groupColor);
+  return s;
+}
+
+const PRIORITY_BARS = { low: 'bg-zinc-300', medium: 'bg-amber-400', high: 'bg-rose-500', critical: 'bg-violet-500' };
 function priorityBar(p) { return PRIORITY_BARS[p] || 'bg-zinc-300'; }
 
 function statusBadgeStyle(s) {

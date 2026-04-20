@@ -701,7 +701,13 @@ const statusMap = computed(() => {
   return map;
 });
 
+function hexToRgb(hex) {
+  const n = parseInt(hex.replace('#', ''), 16);
+  return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
+}
+
 function taskChipClass(task) {
+  if (task.priority === 'critical' && !isDoneStatus(task.status)) return 'bg-violet-100 dark:bg-violet-900/40 text-violet-800 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-800/50 critical-glow';
   if (task.priority === 'high' && !isDoneStatus(task.status)) return 'bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-300 hover:bg-rose-200 dark:hover:bg-rose-800/50';
   const st = statusMap.value[task.status];
   if (!st) return 'bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600';
@@ -710,6 +716,10 @@ function taskChipClass(task) {
 }
 
 function taskChipStyle(task) {
+  if (task.priority === 'critical' && !isDoneStatus(task.status)) {
+    const st = statusMap.value[task.status];
+    return st ? { '--glow-rgb': hexToRgb(st.color) } : {};
+  }
   if (task.priority === 'high' && !isDoneStatus(task.status)) return {};
   const st = statusMap.value[task.status];
   if (!st) return {};

@@ -9,7 +9,7 @@ const router = express.Router();
 router.use(requireAuth);
 
 const DEFAULT_STATUSES = ['todo', 'in-progress', 'done'];
-const VALID_PRIORITIES = ['low', 'medium', 'high'];
+const VALID_PRIORITIES = ['low', 'medium', 'high', 'critical'];
 const POSITION_GAP = 10000;
 
 function validateChecklist(checklist) {
