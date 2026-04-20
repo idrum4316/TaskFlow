@@ -108,6 +108,19 @@
           {{ task.comment_count }}
         </span>
 
+        <!-- Checklist indicator -->
+        <span
+          v-if="checklistTotal"
+          class="inline-flex items-center gap-0.5 text-[11px]"
+          :class="checklistDone === checklistTotal ? 'text-emerald-500 dark:text-emerald-400' : 'text-zinc-400 dark:text-zinc-500'"
+          :title="`Checklist: ${checklistDone}/${checklistTotal} done`"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          {{ checklistDone }}/{{ checklistTotal }}
+        </span>
+
         <!-- Attachment count indicator -->
         <span
           v-if="task.attachment_count"
@@ -226,6 +239,9 @@ const dueSoon = computed(() => {
 });
 
 const hasSubtleDescription = false; // reserved for future use
+
+const checklistTotal = computed(() => (props.task.checklist || []).length);
+const checklistDone = computed(() => (props.task.checklist || []).filter((i) => i.done).length);
 
 function formatDate(d) {
   return new Date(d + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });

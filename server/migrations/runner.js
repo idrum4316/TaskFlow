@@ -9,6 +9,7 @@ const migrations = [
   require('./005_drop_old_invite_tokens'),
   require('./006_add_task_positions'),
   require('./007_add_task_recurrence'),
+  require('./008_add_task_checklists'),
 ];
 
 async function runMigrations() {

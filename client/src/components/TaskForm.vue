@@ -315,6 +315,18 @@
             </div>
           </div>
 
+          <!-- Full-width: Checklist -->
+          <div class="border-t border-zinc-200 dark:border-zinc-700 px-5 sm:px-6 py-5">
+            <div class="flex items-center gap-2 mb-3">
+              <svg class="w-4 h-4 text-zinc-400 dark:text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Checklist</h3>
+              <span v-if="form.checklist.length" class="min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-semibold rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400">{{ checklistDoneCount }}/{{ form.checklist.length }}</span>
+            </div>
+            <TaskChecklist v-model="form.checklist" :read-only="readOnly" />
+          </div>
+
           <!-- Full-width: Attachments -->
           <div class="border-t border-zinc-200 dark:border-zinc-700 px-5 sm:px-6 py-5">
             <div class="flex items-center gap-2 mb-3">
@@ -565,6 +577,7 @@ import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue';
 import TaskComments from './TaskComments.vue';
 import TaskLinks from './TaskLinks.vue';
 import TaskAttachments from './TaskAttachments.vue';
+import TaskChecklist from './TaskChecklist.vue';
 import ConfirmDialog from './ConfirmDialog.vue';
 import { useCommentsStore } from '@/stores/comments';
 import { useAttachmentsStore } from '@/stores/attachments';
@@ -638,6 +651,7 @@ const form = reactive({
   due_date: props.task?.due_date || '',
   labels: props.task?.labels || [],
   recurrence: props.task?.recurrence || null,
+  checklist: props.task?.checklist || [],
 });
 
 const RECURRENCE_TYPES = [
@@ -804,12 +818,17 @@ function autoSaveMetadata() {
 watch(() => form.status, () => { if (props.task) autoSaveMetadata(); });
 watch(() => form.priority, () => { if (props.task) autoSaveMetadata(); });
 watch(() => form.due_date, () => { if (props.task) autoSaveMetadata(); });
+watch(() => form.checklist, () => { if (props.task) autoSaveMetadata(); }, { deep: true });
 
 // Live counts for section headers
 const commentsStore = useCommentsStore();
 const attachmentsStore = useAttachmentsStore();
 const { comments } = storeToRefs(commentsStore);
 const { attachments } = storeToRefs(attachmentsStore);
+
+const checklistDoneCount = computed(() =>
+  (form.checklist || []).filter((i) => i.done).length
+);
 
 function formatDueDate(dateStr) {
   const d = new Date(dateStr + 'T00:00:00');

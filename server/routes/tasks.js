@@ -12,6 +12,17 @@ const DEFAULT_STATUSES = ['todo', 'in-progress', 'done'];
 const VALID_PRIORITIES = ['low', 'medium', 'high'];
 const POSITION_GAP = 10000;
 
+function validateChecklist(checklist) {
+  if (!Array.isArray(checklist)) return [];
+  return checklist
+    .filter((item) => item && typeof item.text === 'string' && item.text.trim())
+    .map((item) => ({
+      id: typeof item.id === 'string' ? item.id : String(Date.now() + Math.random()),
+      text: item.text.trim().slice(0, 500),
+      done: !!item.done,
+    }));
+}
+
 function validateTask(body, requireBoardId = false, boardStatuses = null) {
   const errors = [];
   if (!body.title || !body.title.trim()) errors.push('title is required');
@@ -147,6 +158,7 @@ router.post('/', async (req, res) => {
     due_date: req.body.due_date || null,
     labels: Array.isArray(req.body.labels) ? req.body.labels : [],
     recurrence: req.body.recurrence || null,
+    checklist: validateChecklist(req.body.checklist),
     position: maxPosition + POSITION_GAP,
     created_at: now,
     updated_at: now,
@@ -224,6 +236,7 @@ router.put('/:id', async (req, res) => {
     due_date: req.body.due_date !== undefined ? req.body.due_date : existing.due_date,
     labels: Array.isArray(req.body.labels) ? req.body.labels : (existing.labels || []),
     recurrence,
+    checklist: req.body.checklist !== undefined ? validateChecklist(req.body.checklist) : (existing.checklist || []),
     position: req.body.position ?? existing.position ?? 0,
     updated_at: new Date().toISOString(),
   };

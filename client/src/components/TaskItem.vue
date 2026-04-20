@@ -41,6 +41,17 @@
       <div class="mt-2 flex items-center gap-3 text-xs text-gray-400">
         <span v-if="task.due_date">Due {{ formatDate(task.due_date) }}</span>
         <span class="capitalize">{{ task.priority }} priority</span>
+        <span
+          v-if="checklistTotal"
+          class="inline-flex items-center gap-1"
+          :class="checklistDone === checklistTotal ? 'text-emerald-500 dark:text-emerald-400' : ''"
+          :title="`Checklist: ${checklistDone}/${checklistTotal} done`"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          {{ checklistDone }}/{{ checklistTotal }}
+        </span>
       </div>
 
       <!-- Labels -->
@@ -153,4 +164,7 @@ const statusColor = computed(() => {
 function formatDate(dateStr) {
   return new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
+
+const checklistTotal = computed(() => (props.task.checklist || []).length);
+const checklistDone = computed(() => (props.task.checklist || []).filter((i) => i.done).length);
 </script>
