@@ -68,6 +68,42 @@
   /* Critical priority glow */
   .critical-glow {
     --glow-rgb: 139, 92, 246;
-    @apply animate-critical-pulse;
+    position: relative;
   }
+
+  .critical-glow::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2px;
+    background: conic-gradient(
+      from var(--glow-angle, 0deg),
+      transparent 0%,
+      transparent 50%,
+      rgba(var(--glow-rgb), 0.12) 65%,
+      rgba(var(--glow-rgb), 0.55) 78%,
+      rgba(var(--glow-rgb), 0.8) 84%,
+      rgba(var(--glow-rgb), 0.55) 90%,
+      rgba(var(--glow-rgb), 0.12) 95%,
+      transparent 100%
+    );
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: xor;
+    animation: critical-trace 3s linear infinite;
+    pointer-events: none;
+    z-index: 10;
+  }
+}
+
+@property --glow-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes critical-trace {
+  to { --glow-angle: 360deg; }
 }
