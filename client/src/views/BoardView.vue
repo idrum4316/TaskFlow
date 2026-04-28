@@ -193,6 +193,34 @@
           </button>
         </div>
 
+        <button
+          v-if="activeView === 'kanban'"
+          type="button"
+          @click="toggleKanbanChecklistVisibility"
+          :class="[
+            'inline-flex items-center gap-2 self-start rounded-lg border px-3 py-2 text-sm font-medium transition-colors',
+            showKanbanChecklist
+              ? 'border-brand-500 bg-brand-50 text-brand-700 dark:border-brand-400 dark:bg-brand-900/30 dark:text-brand-300'
+              : 'border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300 hover:text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-zinc-200',
+          ]"
+          :aria-pressed="showKanbanChecklist"
+        >
+          <span
+            :class="[
+              'inline-flex h-5 w-5 items-center justify-center rounded border',
+              showKanbanChecklist
+                ? 'border-brand-500 bg-brand-500 text-white dark:border-brand-400 dark:bg-brand-400'
+                : 'border-zinc-300 text-transparent dark:border-zinc-600',
+            ]"
+            aria-hidden="true"
+          >
+            <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+          </span>
+          <span>{{ showKanbanChecklist ? 'Hide checklist items' : 'Show checklist items' }}</span>
+        </button>
+
         <!-- Label filter -->
         <div v-if="boardLabels.length" class="flex items-center gap-1.5 sm:ml-1 overflow-x-auto scrollbar-none min-w-0">
           <svg class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -245,6 +273,7 @@
         :tasks="filteredTasks"
         :loading="tasksStore.loading"
         :statuses="boardStatuses"
+        :show-checklist-items="showKanbanChecklist"
         @add="openCreateInColumn"
         @edit="openEdit"
         @delete="handleDelete"
@@ -408,8 +437,19 @@ const activeView = computed(() => {
   return ['kanban', 'list', 'calendar'].includes(def) ? def : 'kanban';
 });
 
+const showKanbanChecklist = computed(() => route.query.showChecklist === '1');
+
 function setView(id) {
   router.replace({ query: { ...route.query, view: id } });
+}
+
+function toggleKanbanChecklistVisibility() {
+  router.replace({
+    query: {
+      ...route.query,
+      showChecklist: showKanbanChecklist.value ? undefined : '1',
+    },
+  });
 }
 
 // Label filter — persisted via URL query param

@@ -8,6 +8,7 @@
       :color="col.color"
       :tasks="tasksByStatus[col.status] || []"
       :loading="loading"
+      :show-checklist-items="showChecklistItems"
       @add="$emit('add', col.status)"
       @edit="$emit('edit', $event)"
       @delete="$emit('delete', $event)"
@@ -31,6 +32,7 @@ const props = defineProps({
   tasks: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
   statuses: { type: Array, default: () => [] },
+  showChecklistItems: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['add', 'edit', 'delete', 'reorder']);

@@ -51,6 +51,69 @@
         {{ task.description }}
       </p>
 
+      <!-- Checklist preview -->
+      <div v-if="showChecklistItems && checklistTotal" class="mt-2.5 ml-3 space-y-1.5">
+        <ul class="space-y-1">
+          <li
+            v-for="item in visibleChecklistItems"
+            :key="item.id"
+            class="flex items-start gap-2 text-xs leading-relaxed"
+          >
+            <button
+              type="button"
+              :disabled="savingChecklist"
+              @click.stop="toggleChecklistItem(item.id)"
+              :class="[
+                'mt-0.5 inline-flex w-4 h-4 flex-shrink-0 items-center justify-center rounded border transition-colors',
+                item.done
+                  ? 'border-brand-500 bg-brand-500 text-white dark:border-brand-400 dark:bg-brand-400'
+                  : 'border-zinc-300 text-transparent hover:border-brand-400 hover:bg-brand-50 dark:border-zinc-600 dark:hover:border-brand-400 dark:hover:bg-brand-900/30',
+                savingChecklist ? 'cursor-wait opacity-60' : 'cursor-pointer',
+              ]"
+              :aria-label="item.done ? 'Mark checklist item ' + item.text + ' incomplete' : 'Mark checklist item ' + item.text + ' complete'"
+            >
+              <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              :disabled="savingChecklist"
+              @click.stop="toggleChecklistItem(item.id)"
+              :class="[
+                'min-w-0 flex-1 text-left transition-colors',
+                savingChecklist ? 'cursor-wait opacity-80' : 'cursor-pointer',
+                item.done ? 'line-through text-zinc-400 dark:text-zinc-500' : 'text-zinc-600 dark:text-zinc-300',
+              ]"
+            >
+              {{ item.text }}
+            </button>
+          </li>
+        </ul>
+        <button
+          v-if="!expandedChecklist && checklistTotal > CHECKLIST_PREVIEW_CAP"
+          type="button"
+          class="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-400 transition-colors hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+          @click.stop="expandedChecklist = true"
+        >
+          <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+          </svg>
+          Show All
+        </button>
+        <button
+          v-else-if="expandedChecklist && checklistTotal > CHECKLIST_PREVIEW_CAP"
+          type="button"
+          class="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-400 transition-colors hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+          @click.stop="expandedChecklist = false"
+        >
+          <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
+          </svg>
+          Show Less
+        </button>
+      </div>
+
       <!-- Labels -->
       <div v-if="taskLabels.length" class="flex items-center flex-wrap gap-1 mt-2 ml-3">
         <span
@@ -149,7 +212,7 @@
 </template>
 
 <script setup>
-import { computed, ref, inject } from 'vue';
+import { computed, ref, inject, watch } from 'vue';
 import { startTouchDrag, touchDragState } from '@/composables/useTouchDragDrop';
 import { describeRecurrence } from '@/utils/recurrence';
 import { useTasksStore } from '@/stores/tasks';
@@ -157,11 +220,14 @@ import { useTasksStore } from '@/stores/tasks';
 const props = defineProps({
   task: { type: Object, required: true },
   statusColor: { type: String, default: '#a1a1aa' },
+  showChecklistItems: { type: Boolean, default: false },
 });
 defineEmits(['edit', 'delete']);
 
 const tasksStore = useTasksStore();
 const completing = ref(false);
+const savingChecklist = ref(false);
+const expandedChecklist = ref(false);
 
 async function completeOccurrence() {
   if (completing.value) return;
@@ -170,6 +236,22 @@ async function completeOccurrence() {
     await tasksStore.completeOccurrence(props.task._id);
   } finally {
     completing.value = false;
+  }
+}
+
+async function toggleChecklistItem(itemId) {
+  if (savingChecklist.value) return;
+  const updatedChecklist = (props.task.checklist || []).map((item) =>
+    item.id === itemId ? { ...item, done: !item.done } : item
+  );
+  savingChecklist.value = true;
+  try {
+    await tasksStore.updateTask(props.task._id, {
+      ...props.task,
+      checklist: updatedChecklist,
+    });
+  } finally {
+    savingChecklist.value = false;
   }
 }
 
@@ -256,8 +338,21 @@ const dueSoon = computed(() => {
 
 const hasSubtleDescription = false; // reserved for future use
 
-const checklistTotal = computed(() => (props.task.checklist || []).length);
-const checklistDone = computed(() => (props.task.checklist || []).filter((i) => i.done).length);
+const checklistItems = computed(() => props.task.checklist || []);
+const checklistTotal = computed(() => checklistItems.value.length);
+const checklistDone = computed(() => checklistItems.value.filter((i) => i.done).length);
+const CHECKLIST_PREVIEW_CAP = 4;
+const visibleChecklistItems = computed(() =>
+  expandedChecklist.value ? checklistItems.value : checklistItems.value.slice(0, CHECKLIST_PREVIEW_CAP)
+);
+
+watch(checklistTotal, (total) => {
+  if (total <= CHECKLIST_PREVIEW_CAP) expandedChecklist.value = false;
+});
+
+watch(() => props.showChecklistItems, (visible) => {
+  if (!visible) expandedChecklist.value = false;
+});
 
 function formatDate(d) {
   return new Date(d + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });

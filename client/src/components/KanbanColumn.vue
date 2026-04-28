@@ -47,6 +47,7 @@
         <KanbanCard
           :task="task"
           :status-color="color"
+          :show-checklist-items="showChecklistItems"
           :data-task-id="task._id"
           @edit="$emit('edit', task)"
           @delete="$emit('delete', task._id)"
@@ -85,6 +86,7 @@ const props = defineProps({
   color: { type: String, default: '#a1a1aa' },
   tasks: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
+  showChecklistItems: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['add', 'edit', 'delete', 'reorder']);
