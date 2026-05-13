@@ -289,6 +289,16 @@
         @delete="handleDelete"
         @reorder="handleReorder"
       />
+      <TaskTableView
+        v-else-if="activeView === 'table'"
+        :tasks="filteredTasks"
+        :loading="tasksStore.loading"
+        :statuses="boardStatuses"
+        @add="openCreateInColumn"
+        @edit="openEdit"
+        @status-change="handleStatusChange"
+        @priority-change="handlePriorityChange"
+      />
       <TaskCalendarView
         v-else-if="activeView === 'calendar'"
         :tasks="filteredTasks"
@@ -376,6 +386,7 @@ import { useSharesStore } from '@/stores/shares';
 import { useNotesStore } from '@/stores/notes';
 import KanbanBoard from '@/components/KanbanBoard.vue';
 import TaskListView from '@/components/TaskListView.vue';
+import TaskTableView from '@/components/TaskTableView.vue';
 import TaskCalendarView from '@/components/TaskCalendarView.vue';
 import TaskForm from '@/components/TaskForm.vue';
 import ShareBoardModal from '@/components/ShareBoardModal.vue';
@@ -430,11 +441,13 @@ const DEFAULT_STATUSES = [
 
 const boardStatuses = computed(() => board.value?.statuses || DEFAULT_STATUSES);
 
+const VALID_VIEWS = ['kanban', 'list', 'table', 'calendar'];
+
 const activeView = computed(() => {
   const v = route.query.view;
-  if (['kanban', 'list', 'calendar'].includes(v)) return v;
+  if (VALID_VIEWS.includes(v)) return v;
   const def = board.value?.default_view;
-  return ['kanban', 'list', 'calendar'].includes(def) ? def : 'kanban';
+  return VALID_VIEWS.includes(def) ? def : 'kanban';
 });
 
 const showKanbanChecklist = computed(() => route.query.showChecklist === '1');
@@ -494,6 +507,11 @@ const ListIcon = {
     h('rect', { x: 2, y: 14, width: 10, height: 2, rx: 1 }),
   ]),
 };
+const TableIcon = {
+  render: () => h('svg', { viewBox: '0 0 20 20', fill: 'currentColor' }, [
+    h('path', { 'fill-rule': 'evenodd', d: 'M3 4.5A1.5 1.5 0 014.5 3h11A1.5 1.5 0 0117 4.5v11a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 013 15.5v-11zM5 5v2.5h4V5H5zm6 0v2.5h4V5h-4zM5 9.5V12h4V9.5H5zm6 0V12h4V9.5h-4zM5 14v1h4v-1H5zm6 0v1h4v-1h-4z', 'clip-rule': 'evenodd' }),
+  ]),
+};
 const CalendarIcon = {
   render: () => h('svg', { viewBox: '0 0 20 20', fill: 'currentColor' }, [
     h('path', { 'fill-rule': 'evenodd', d: 'M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z', 'clip-rule': 'evenodd' }),
@@ -503,6 +521,7 @@ const CalendarIcon = {
 const views = [
   { id: 'kanban', label: 'Kanban', icon: KanbanIcon },
   { id: 'list', label: 'List', icon: ListIcon },
+  { id: 'table', label: 'Table', icon: TableIcon },
   { id: 'calendar', label: 'Calendar', icon: CalendarIcon },
 ];
 
@@ -591,6 +610,11 @@ async function handleFormDelete(id) {
 async function handleStatusChange({ id, status }) {
   const task = tasksStore.tasks.find((t) => t._id === id);
   if (task) await tasksStore.updateTask(id, { ...task, status });
+}
+
+async function handlePriorityChange({ id, priority }) {
+  const task = tasksStore.tasks.find((t) => t._id === id);
+  if (task) await tasksStore.updateTask(id, { ...task, priority });
 }
 
 async function handleReorder({ id, status, position }) {

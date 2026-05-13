@@ -19,7 +19,7 @@
         <div>
           <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Default View</label>
           <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-3">Choose which view loads by default when opening this board.</p>
-          <div class="grid grid-cols-3 gap-2">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <button
               v-for="v in viewOptions"
               :key="v.id"
@@ -108,6 +108,11 @@ const ListIcon = {
     h('rect', { x: 2, y: 14, width: 10, height: 2, rx: 1 }),
   ]),
 };
+const TableIcon = {
+  render: () => h('svg', { viewBox: '0 0 20 20', fill: 'currentColor' }, [
+    h('path', { 'fill-rule': 'evenodd', d: 'M3 4.5A1.5 1.5 0 014.5 3h11A1.5 1.5 0 0117 4.5v11a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 013 15.5v-11zM5 5v2.5h4V5H5zm6 0v2.5h4V5h-4zM5 9.5V12h4V9.5H5zm6 0V12h4V9.5h-4zM5 14v1h4v-1H5zm6 0v1h4v-1h-4z', 'clip-rule': 'evenodd' }),
+  ]),
+};
 const CalendarIcon = {
   render: () => h('svg', { viewBox: '0 0 20 20', fill: 'currentColor' }, [
     h('path', { 'fill-rule': 'evenodd', d: 'M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z', 'clip-rule': 'evenodd' }),
@@ -117,6 +122,7 @@ const CalendarIcon = {
 const viewOptions = [
   { id: 'kanban', label: 'Kanban', icon: KanbanIcon },
   { id: 'list', label: 'List', icon: ListIcon },
+  { id: 'table', label: 'Table', icon: TableIcon },
   { id: 'calendar', label: 'Calendar', icon: CalendarIcon },
 ];
 
