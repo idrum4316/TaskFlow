@@ -279,16 +279,6 @@
         @delete="handleDelete"
         @reorder="handleReorder"
       />
-      <TaskListView
-        v-else-if="activeView === 'list'"
-        :tasks="filteredTasks"
-        :loading="tasksStore.loading"
-        :statuses="boardStatuses"
-        @add="openCreateInColumn"
-        @edit="openEdit"
-        @delete="handleDelete"
-        @reorder="handleReorder"
-      />
       <TaskTableView
         v-else-if="activeView === 'table'"
         :tasks="filteredTasks"
@@ -369,7 +359,7 @@
     <BoardSettingsModal
       v-if="showBoardSettings && board"
       :board-id="board._id"
-      :current-view="board.default_view || 'kanban'"
+      :current-view="normalizeView(board.default_view) || 'kanban'"
       :current-calendar-mode="board.default_calendar_mode || 'month'"
       :save-fn="handleSaveSettings"
       @close="showBoardSettings = false"
@@ -385,7 +375,6 @@ import { useTasksStore } from '@/stores/tasks';
 import { useSharesStore } from '@/stores/shares';
 import { useNotesStore } from '@/stores/notes';
 import KanbanBoard from '@/components/KanbanBoard.vue';
-import TaskListView from '@/components/TaskListView.vue';
 import TaskTableView from '@/components/TaskTableView.vue';
 import TaskCalendarView from '@/components/TaskCalendarView.vue';
 import TaskForm from '@/components/TaskForm.vue';
@@ -441,13 +430,17 @@ const DEFAULT_STATUSES = [
 
 const boardStatuses = computed(() => board.value?.statuses || DEFAULT_STATUSES);
 
-const VALID_VIEWS = ['kanban', 'list', 'table', 'calendar'];
+const VALID_VIEWS = ['kanban', 'table', 'calendar'];
+
+function normalizeView(view) {
+  return view === 'list' ? 'table' : view;
+}
 
 const activeView = computed(() => {
-  const v = route.query.view;
-  if (VALID_VIEWS.includes(v)) return v;
-  const def = board.value?.default_view;
-  return VALID_VIEWS.includes(def) ? def : 'kanban';
+  const queryView = normalizeView(route.query.view);
+  if (VALID_VIEWS.includes(queryView)) return queryView;
+  const defaultView = normalizeView(board.value?.default_view);
+  return VALID_VIEWS.includes(defaultView) ? defaultView : 'kanban';
 });
 
 const showKanbanChecklist = computed(() => route.query.showChecklist === '1');
@@ -500,13 +493,6 @@ const KanbanIcon = {
     h('rect', { x: 14, y: 3, width: 4, height: 11, rx: 1.5 }),
   ]),
 };
-const ListIcon = {
-  render: () => h('svg', { viewBox: '0 0 20 20', fill: 'currentColor' }, [
-    h('rect', { x: 2, y: 4, width: 16, height: 2, rx: 1 }),
-    h('rect', { x: 2, y: 9, width: 16, height: 2, rx: 1 }),
-    h('rect', { x: 2, y: 14, width: 10, height: 2, rx: 1 }),
-  ]),
-};
 const TableIcon = {
   render: () => h('svg', { viewBox: '0 0 20 20', fill: 'currentColor' }, [
     h('path', { 'fill-rule': 'evenodd', d: 'M3 4.5A1.5 1.5 0 014.5 3h11A1.5 1.5 0 0117 4.5v11a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 013 15.5v-11zM5 5v2.5h4V5H5zm6 0v2.5h4V5h-4zM5 9.5V12h4V9.5H5zm6 0V12h4V9.5h-4zM5 14v1h4v-1H5zm6 0v1h4v-1h-4z', 'clip-rule': 'evenodd' }),
@@ -520,7 +506,6 @@ const CalendarIcon = {
 
 const views = [
   { id: 'kanban', label: 'Kanban', icon: KanbanIcon },
-  { id: 'list', label: 'List', icon: ListIcon },
   { id: 'table', label: 'Table', icon: TableIcon },
   { id: 'calendar', label: 'Calendar', icon: CalendarIcon },
 ];

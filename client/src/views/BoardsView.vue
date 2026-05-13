@@ -46,7 +46,7 @@
         </div>
         <h3 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">No boards yet</h3>
         <p class="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400 max-w-xs">
-          Create your first board to start organizing tasks with kanban, list, or calendar views.
+          Create your first board to start organizing tasks with kanban, table, or calendar views.
         </p>
         <button @click="showCreate = true" class="btn-primary mt-6">
           Create your first board

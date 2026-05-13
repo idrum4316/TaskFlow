@@ -19,7 +19,7 @@
         <div>
           <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Default View</label>
           <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-3">Choose which view loads by default when opening this board.</p>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <button
               v-for="v in viewOptions"
               :key="v.id"
@@ -90,7 +90,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'saved']);
 
-const selectedView = ref(props.currentView);
+const selectedView = ref(props.currentView === 'list' ? 'table' : props.currentView);
 const selectedCalendarMode = ref(props.currentCalendarMode);
 const saving = ref(false);
 
@@ -99,13 +99,6 @@ const KanbanIcon = {
     h('rect', { x: 2, y: 3, width: 4, height: 14, rx: 1.5 }),
     h('rect', { x: 8, y: 3, width: 4, height: 9, rx: 1.5 }),
     h('rect', { x: 14, y: 3, width: 4, height: 11, rx: 1.5 }),
-  ]),
-};
-const ListIcon = {
-  render: () => h('svg', { viewBox: '0 0 20 20', fill: 'currentColor' }, [
-    h('rect', { x: 2, y: 4, width: 16, height: 2, rx: 1 }),
-    h('rect', { x: 2, y: 9, width: 16, height: 2, rx: 1 }),
-    h('rect', { x: 2, y: 14, width: 10, height: 2, rx: 1 }),
   ]),
 };
 const TableIcon = {
@@ -121,7 +114,6 @@ const CalendarIcon = {
 
 const viewOptions = [
   { id: 'kanban', label: 'Kanban', icon: KanbanIcon },
-  { id: 'list', label: 'List', icon: ListIcon },
   { id: 'table', label: 'Table', icon: TableIcon },
   { id: 'calendar', label: 'Calendar', icon: CalendarIcon },
 ];

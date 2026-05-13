@@ -10,6 +10,7 @@ const migrations = [
   require('./006_add_task_positions'),
   require('./007_add_task_recurrence'),
   require('./008_add_task_checklists'),
+  require('./009_replace_list_view_with_table'),
 ];
 
 async function runMigrations() {
