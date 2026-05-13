@@ -462,7 +462,7 @@ const selectedLabels = computed(() => {
 const filteredTasks = computed(() => {
   if (!selectedLabels.value.size) return tasksStore.tasks;
   return tasksStore.tasks.filter((t) =>
-    (t.labels || []).some((id) => selectedLabels.value.has(id))
+    [...selectedLabels.value].every((labelId) => (t.labels || []).includes(labelId))
   );
 });
 
