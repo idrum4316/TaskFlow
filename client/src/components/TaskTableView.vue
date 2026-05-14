@@ -29,7 +29,7 @@
 
     <div v-else class="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-card overflow-hidden min-w-full">
       <div class="overflow-auto">
-        <table class="min-w-[1120px] w-full border-separate border-spacing-0 text-sm">
+        <table class="min-w-[1120px] w-full table-fixed border-separate border-spacing-0 text-sm">
           <thead class="sticky top-0 z-10 bg-zinc-100 dark:bg-zinc-800">
             <tr>
               <th
@@ -80,10 +80,10 @@
               @click="$emit('edit', task)"
               class="group bg-white dark:bg-zinc-900 hover:bg-zinc-50/90 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer"
             >
-              <td class="border-b border-r border-l-[3px] border-zinc-100 dark:border-zinc-800 px-3 py-2.5 align-middle" :style="{ borderLeftColor: statusColor(task.status) }">
+              <td class="w-[300px] max-w-[300px] border-b border-r border-l-[3px] border-zinc-100 dark:border-zinc-800 px-3 py-2.5 align-middle" :style="{ borderLeftColor: statusColor(task.status) }">
                 <div class="flex items-center gap-2 min-w-0">
                   <span :class="['w-1.5 h-8 rounded-full flex-shrink-0', priorityBar(task.priority)]" aria-hidden="true" />
-                  <div class="min-w-0">
+                  <div class="min-w-0 max-w-full">
                     <div
                       :class="[
                         'font-medium truncate',
