@@ -132,16 +132,16 @@ router.post('/', async (req, res) => {
   const defaultStatus = board.statuses?.[0]?.id || 'todo';
   const taskStatus = req.body.status || defaultStatus;
 
-  // Compute position: append to end of status group
-  let maxPosition = 0;
+  // Compute position: prepend to start of status group
+  let minPosition = Infinity;
   try {
     const { rows } = await getTasksDb().view('tasks', 'by_board_and_status', {
       key: [req.body.board_id, taskStatus],
       include_docs: true,
     });
     for (const r of rows) {
-      if (r.doc.position != null && r.doc.position > maxPosition) {
-        maxPosition = r.doc.position;
+      if (r.doc.position != null && r.doc.position < minPosition) {
+        minPosition = r.doc.position;
       }
     }
   } catch { /* use 0 */ }
@@ -159,7 +159,7 @@ router.post('/', async (req, res) => {
     labels: Array.isArray(req.body.labels) ? req.body.labels : [],
     recurrence: req.body.recurrence || null,
     checklist: validateChecklist(req.body.checklist),
-    position: maxPosition + POSITION_GAP,
+    position: (minPosition === Infinity ? 0 : minPosition) - POSITION_GAP,
     created_at: now,
     updated_at: now,
   };
