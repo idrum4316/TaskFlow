@@ -554,7 +554,7 @@ const ghostsByDay = computed(() => {
   return map;
 });
 
-const undatedTasks = computed(() => props.tasks.filter((t) => !t.due_date));
+const undatedTasks = computed(() => props.tasks.filter((t) => !t.due_date && !isDoneStatus(t.status)));
 
 // Build a task lookup for completion ghost labels
 const taskMap = computed(() => {
