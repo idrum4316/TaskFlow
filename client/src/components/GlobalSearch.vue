@@ -52,6 +52,43 @@
             </div>
           </div>
 
+          <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <div
+              v-if="canSearchCurrentBoard"
+              class="inline-flex rounded-xl border border-zinc-200 bg-zinc-50 p-1 text-xs font-semibold shadow-card dark:border-zinc-700 dark:bg-zinc-950/70"
+              role="group"
+              aria-label="Search scope"
+            >
+              <button
+                type="button"
+                :class="[
+                  'rounded-lg px-3 py-1.5 transition-colors focus-visible:ring-offset-0',
+                  searchScope === 'board'
+                    ? 'bg-white text-brand-700 shadow-sm dark:bg-zinc-800 dark:text-brand-300'
+                    : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100',
+                ]"
+                :aria-pressed="searchScope === 'board'"
+                @click="setSearchScope('board')"
+              >
+                Current board
+              </button>
+              <button
+                type="button"
+                :class="[
+                  'rounded-lg px-3 py-1.5 transition-colors focus-visible:ring-offset-0',
+                  searchScope === 'global'
+                    ? 'bg-white text-brand-700 shadow-sm dark:bg-zinc-800 dark:text-brand-300'
+                    : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100',
+                ]"
+                :aria-pressed="searchScope === 'global'"
+                @click="setSearchScope('global')"
+              >
+                Global
+              </button>
+            </div>
+            <p class="text-xs font-medium text-zinc-500 dark:text-zinc-400">{{ searchScopeDescription }}</p>
+          </div>
+
           <div v-if="hasQuery" class="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
             <span class="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 font-medium shadow-card dark:bg-zinc-800">
               <span class="h-1.5 w-1.5 rounded-full bg-brand-500" />
@@ -237,7 +274,7 @@
 
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useBoardsStore } from '@/stores/boards';
 import { useSearchStore } from '@/stores/search';
 
@@ -273,8 +310,10 @@ const PRIORITY_META = {
 const searchStore = useSearchStore();
 const boardsStore = useBoardsStore();
 const router = useRouter();
+const route = useRoute();
 const inputRef = ref(null);
 const selectedIndex = ref(0);
+const searchScope = ref('global');
 
 const hasQuery = computed(() => Boolean(searchStore.query.trim()));
 const taskResults = computed(() => searchStore.results.filter((r) => r.type === 'task'));
@@ -290,6 +329,18 @@ const boardMap = computed(() => {
   for (const board of boardsStore.boards) map.set(board._id, board);
   return map;
 });
+
+const currentBoardId = computed(() => (
+  route.name === 'board' && typeof route.params.id === 'string' ? route.params.id : ''
+));
+const canSearchCurrentBoard = computed(() => Boolean(currentBoardId.value));
+const currentBoardName = computed(() => boardMap.value.get(currentBoardId.value)?.name || 'current board');
+const activeSearchBoardId = computed(() => (
+  searchScope.value === 'board' && canSearchCurrentBoard.value ? currentBoardId.value : ''
+));
+const searchScopeDescription = computed(() => (
+  activeSearchBoardId.value ? `Searching ${currentBoardName.value}` : 'Searching all boards'
+));
 
 const matchingBoardCount = computed(() => new Set(flatResults.value.map((r) => r.board_id).filter(Boolean)).size);
 const resultSummary = computed(() => {
@@ -454,17 +505,37 @@ function excerpt(result) {
     .trim();
 }
 
+function defaultScopeForRoute() {
+  if (route.name === 'boards') return 'global';
+  return canSearchCurrentBoard.value ? 'board' : 'global';
+}
+
+function applyDefaultScope() {
+  searchScope.value = defaultScopeForRoute();
+}
+
+function executeSearch() {
+  if (searchStore.query.trim()) {
+    searchStore.search(searchStore.query, { boardId: activeSearchBoardId.value });
+  } else {
+    searchStore.results = [];
+  }
+}
+
 let debounceTimer;
 function onInput() {
   clearTimeout(debounceTimer);
   selectedIndex.value = 0;
-  debounceTimer = setTimeout(() => {
-    if (searchStore.query.trim()) {
-      searchStore.search(searchStore.query);
-    } else {
-      searchStore.results = [];
-    }
-  }, 250);
+  debounceTimer = setTimeout(executeSearch, 250);
+}
+
+function setSearchScope(scope) {
+  if (scope === 'board' && !canSearchCurrentBoard.value) return;
+  if (searchScope.value === scope) return;
+  searchScope.value = scope;
+  selectedIndex.value = 0;
+  clearTimeout(debounceTimer);
+  executeSearch();
 }
 
 function onKeyDown(e) {
@@ -489,10 +560,20 @@ onUnmounted(() => {
 
 watch(() => searchStore.open, (val) => {
   if (val) {
+    applyDefaultScope();
     selectedIndex.value = 0;
     nextTick(() => inputRef.value?.focus());
     if (!boardsStore.boards.length) boardsStore.fetchBoards();
+    executeSearch();
   }
+});
+
+watch(currentBoardId, () => {
+  if (!searchStore.open) return;
+  applyDefaultScope();
+  selectedIndex.value = 0;
+  clearTimeout(debounceTimer);
+  executeSearch();
 });
 
 watch(() => flatResults.value.length, () => {

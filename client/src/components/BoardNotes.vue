@@ -235,6 +235,7 @@ const pendingDelete = ref(null);
 const contentEl = ref(null);
 
 let savedTimer = null;
+let initialNoteRequestId = 0;
 
 // Configure marked for safe rendering
 marked.setOptions({ breaks: true, gfm: true });
@@ -254,11 +255,29 @@ onMounted(async () => {
 });
 
 watch(() => props.initialNoteId, openInitialNote);
+watch(() => notesStore.notes, openInitialNote);
 
-function openInitialNote() {
-  if (!props.initialNoteId) return;
-  const note = notesStore.notes.find((n) => n._id === props.initialNoteId);
-  if (note) openNote(note);
+async function openInitialNote() {
+  const noteId = props.initialNoteId;
+  if (!noteId || activeNote.value?._id === noteId) return;
+
+  const note = notesStore.notes.find((n) => n._id === noteId);
+  if (note) {
+    openNote(note);
+    return;
+  }
+
+  if (notesStore.loading) return;
+
+  const requestId = ++initialNoteRequestId;
+  try {
+    const fetched = await notesStore.fetchNote(props.boardId, noteId);
+    if (requestId === initialNoteRequestId && props.initialNoteId === noteId) {
+      openNote(fetched);
+    }
+  } catch {
+    // Leave the drawer on the list if the note is unavailable.
+  }
 }
 
 function formatDate(iso) {

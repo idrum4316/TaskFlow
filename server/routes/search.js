@@ -5,7 +5,11 @@ const { meiliClient } = require('../config/meili');
 const router = express.Router();
 router.use(requireAuth);
 
-// GET /api/search?q=...&types=task,note&limit=20
+function quoteFilterValue(value) {
+  return `"${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+}
+
+// GET /api/search?q=...&types=task,note&limit=20[&board_id=...]
 router.get('/', async (req, res) => {
   const { q } = req.query;
   if (!q || typeof q !== 'string' || !q.trim()) {
@@ -20,7 +24,11 @@ router.get('/', async (req, res) => {
   if (limit > 50) limit = 50;
 
   const userId = req.user.sub;
-  const filter = `accessible_to = "${userId}"`;
+  const rawBoardId = req.query.board_id;
+  const boardId = typeof rawBoardId === 'string' ? rawBoardId.trim() : '';
+  const filters = [`accessible_to = ${quoteFilterValue(userId)}`];
+  if (boardId) filters.push(`board_id = ${quoteFilterValue(boardId)}`);
+  const filter = filters.join(' AND ');
 
   try {
     const searchOpts = { filter, limit, showRankingScore: true };

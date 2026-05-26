@@ -7,22 +7,28 @@ export const useSearchStore = defineStore('search', () => {
   const results = ref([]);
   const loading = ref(false);
   const open = ref(false);
+  let searchRequestId = 0;
 
-  async function search(q) {
+  async function search(q, options = {}) {
+    const requestId = ++searchRequestId;
     loading.value = true;
     try {
-      const response = await api.get('/search', { params: { q, limit: 20 } });
-      results.value = response.data.results || [];
+      const params = { q, limit: 20 };
+      if (options.boardId) params.board_id = options.boardId;
+      const response = await api.get('/search', { params });
+      if (requestId === searchRequestId) results.value = response.data.results || [];
     } catch {
-      results.value = [];
+      if (requestId === searchRequestId) results.value = [];
     } finally {
-      loading.value = false;
+      if (requestId === searchRequestId) loading.value = false;
     }
   }
 
   function clear() {
+    searchRequestId += 1;
     query.value = '';
     results.value = [];
+    loading.value = false;
   }
 
   function close() {

@@ -539,6 +539,8 @@ async function handleSearchQuery() {
 
   if (noteId && typeof noteId === 'string') {
     showNotes.value = true;
+    initialNoteId.value = null;
+    await nextTick();
     initialNoteId.value = noteId;
     router.replace({ query: { ...route.query, note: undefined } });
   }
