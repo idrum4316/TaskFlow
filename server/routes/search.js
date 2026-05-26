@@ -1,6 +1,7 @@
 const express = require('express');
 const { requireAuth } = require('../middleware/auth');
 const { meiliClient } = require('../config/meili');
+const { getBoardsDb } = require('../config/couch');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -24,9 +25,40 @@ router.get('/', async (req, res) => {
   if (limit > 50) limit = 50;
 
   const userId = req.user.sub;
+
+  // Resolve the user's accessible board IDs from CouchDB at query time.
+  // This is the authoritative source — no stale access data in the index.
+  let accessibleBoardIds;
+  try {
+    const boardsDb = getBoardsDb();
+    const [ownedResult, sharedResult] = await Promise.all([
+      boardsDb.view('boards', 'by_user', { key: userId }),
+      boardsDb.view('boards', 'by_shared_user', { key: userId }),
+    ]);
+    accessibleBoardIds = [
+      ...new Set([
+        ...ownedResult.rows.map((r) => r.id),
+        ...sharedResult.rows.map((r) => r.id),
+      ]),
+    ];
+  } catch (err) {
+    console.error('Search: failed to resolve board access:', err.message);
+    return res.status(503).json({ error: 'Search unavailable' });
+  }
+
+  // User with no boards has nothing to search.
+  if (accessibleBoardIds.length === 0) {
+    return res.json({ results: [] });
+  }
+
   const rawBoardId = req.query.board_id;
   const boardId = typeof rawBoardId === 'string' ? rawBoardId.trim() : '';
-  const filters = [`accessible_to = ${quoteFilterValue(userId)}`];
+
+  // Build Meilisearch filter. Using board_id IN [...] means authorization is
+  // always derived from live CouchDB data — share additions/revocations take
+  // effect immediately without any re-indexing.
+  const boardListFilter = `board_id IN [${accessibleBoardIds.map(quoteFilterValue).join(', ')}]`;
+  const filters = [boardListFilter];
   if (boardId) filters.push(`board_id = ${quoteFilterValue(boardId)}`);
   const filter = filters.join(' AND ');
 

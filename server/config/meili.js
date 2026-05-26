@@ -7,7 +7,7 @@ const meiliClient = new Meilisearch({ host, apiKey });
 
 const INDEX_SETTINGS = {
   searchableAttributes: ['title', 'description', 'content', 'labels'],
-  filterableAttributes: ['accessible_to', 'board_id', 'type', 'status', 'priority'],
+  filterableAttributes: ['board_id', 'type', 'status', 'priority'],
   sortableAttributes: ['created_at', 'updated_at'],
 };
 
