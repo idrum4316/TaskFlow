@@ -66,12 +66,12 @@
     </div>
 
     <!-- Month calendar grid -->
-    <div v-if="viewMode === 'month'" class="grid grid-cols-7 gap-px bg-zinc-200 dark:bg-zinc-700 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-700 flex-1 min-h-0">
+    <div v-if="viewMode === 'month'" class="grid grid-cols-7 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-700 flex-1 min-h-0">
       <div
         v-for="(cell, i) in calendarCells"
         :key="i"
         :class="[
-          'flex flex-col overflow-hidden p-1.5 transition-colors',
+          'flex flex-col overflow-hidden p-1.5 transition-colors border-r border-b border-zinc-200 dark:border-zinc-700',
           cell.day ? 'bg-white dark:bg-zinc-800' : 'bg-zinc-50/80 dark:bg-zinc-800/50',
           cell.isToday ? 'bg-brand-50 dark:bg-brand-950/30' : '',
           cell.day && dropTarget === cellKey(cell) ? 'ring-2 ring-inset ring-brand-500 bg-brand-50 dark:bg-brand-950/40' : '',
@@ -156,12 +156,12 @@
     </div>
 
     <!-- Week view grid (desktop) -->
-    <div v-if="viewMode === 'week'" class="hidden sm:grid grid-cols-7 gap-px bg-zinc-200 dark:bg-zinc-700 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-700 flex-1 min-h-0">
+    <div v-if="viewMode === 'week'" class="hidden sm:grid grid-cols-7 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-700 flex-1 min-h-0">
       <div
         v-for="(cell, i) in weekCells"
         :key="i"
         :class="[
-          'flex flex-col overflow-hidden p-2 transition-colors bg-white dark:bg-zinc-800',
+          'flex flex-col overflow-hidden p-2 transition-colors bg-white dark:bg-zinc-800 border-r border-zinc-200 dark:border-zinc-700',
           cell.isToday ? 'bg-brand-50 dark:bg-brand-950/30' : '',
           dropTarget === cellKey(cell) ? 'ring-2 ring-inset ring-brand-500 bg-brand-50 dark:bg-brand-950/40' : '',
         ]"
