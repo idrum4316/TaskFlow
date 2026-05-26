@@ -22,24 +22,22 @@ router.get('/', async (req, res) => {
   const userId = req.user.sub;
   const filter = `accessible_to = "${userId}"`;
 
-  const results = [];
-
   try {
-    if (types.includes('task')) {
-      const taskResult = await meiliClient.index('tasks').search(q.trim(), {
-        filter,
-        limit,
-      });
-      results.push(...taskResult.hits);
-    }
+    const searchOpts = { filter, limit, showRankingScore: true };
+    const queries = [];
+    if (types.includes('task')) queries.push(meiliClient.index('tasks').search(q.trim(), searchOpts));
+    if (types.includes('note')) queries.push(meiliClient.index('notes').search(q.trim(), searchOpts));
 
-    if (types.includes('note')) {
-      const noteResult = await meiliClient.index('notes').search(q.trim(), {
-        filter,
-        limit,
-      });
-      results.push(...noteResult.hits);
-    }
+    const responses = await Promise.all(queries);
+
+    // Merge hits from all indexes, sort by descending relevance score, then cap at limit
+    const merged = responses
+      .flatMap((r) => r.hits)
+      .sort((a, b) => (b._rankingScore ?? 0) - (a._rankingScore ?? 0))
+      .slice(0, limit);
+
+    // Strip internal ranking field before sending to client
+    const results = merged.map(({ _rankingScore, ...hit }) => hit);
 
     res.json({ results });
   } catch (err) {

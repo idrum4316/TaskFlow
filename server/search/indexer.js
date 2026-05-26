@@ -108,9 +108,8 @@ async function reindexAll() {
   }
 
   // Fetch all notes
-  const { rows: noteRows } = await boardsDb.list({ include_docs: true });
   const noteDocs = [];
-  for (const row of noteRows) {
+  for (const row of boardRows) {
     const doc = row.doc;
     if (!doc || doc.type !== 'board_note') continue;
     noteDocs.push({

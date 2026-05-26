@@ -427,6 +427,11 @@ router.post('/:id/complete-occurrence', async (req, res) => {
 
   try {
     const result = await db.insert(updated);
+    try {
+      await indexTask({ ...updated, _id: existing._id, _rev: result.rev });
+    } catch (err) {
+      console.error('Failed to index task after complete-occurrence:', err);
+    }
     res.json({ ...updated, _rev: result.rev });
   } catch {
     res.status(500).json({ error: 'Failed to complete occurrence' });
@@ -509,8 +514,18 @@ router.put('/:id/reorder', async (req, res) => {
         }
       }
       saved.position = renumbered.find((r) => r._id === saved._id)?.position ?? saved.position;
+      try {
+        await indexTask(saved);
+      } catch (err) {
+        console.error('Failed to index task after reorder:', err);
+      }
       res.json({ ...saved, renumbered });
     } else {
+      try {
+        await indexTask(saved);
+      } catch (err) {
+        console.error('Failed to index task after reorder:', err);
+      }
       res.json(saved);
     }
   } catch {

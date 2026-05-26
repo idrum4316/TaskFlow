@@ -25,9 +25,14 @@ export const useSearchStore = defineStore('search', () => {
     results.value = [];
   }
 
+  function close() {
+    open.value = false;
+    clear();
+  }
+
   function toggleOpen() {
     open.value = !open.value;
   }
 
-  return { query, results, loading, open, search, clear, toggleOpen };
+  return { query, results, loading, open, search, clear, close, toggleOpen };
 });

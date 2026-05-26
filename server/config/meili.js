@@ -6,6 +6,7 @@ const apiKey = process.env.MEILISEARCH_API_KEY || '';
 const meiliClient = new Meilisearch({ host, apiKey });
 
 const INDEX_SETTINGS = {
+  searchableAttributes: ['title', 'description', 'content', 'labels'],
   filterableAttributes: ['accessible_to', 'board_id', 'type', 'status', 'priority'],
   sortableAttributes: ['created_at', 'updated_at'],
 };

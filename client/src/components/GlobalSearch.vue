@@ -19,7 +19,7 @@
             placeholder="Search tasks and notes…"
             @input="onInput"
             @keydown.enter="openFirst"
-            @keydown.escape="close"
+            @keydown.escape="searchStore.close()"
           >
           <span class="text-xs text-zinc-400 dark:text-zinc-500 font-medium hidden sm:inline-block">Ctrl K</span>
         </div>
@@ -83,8 +83,7 @@ const taskResults = computed(() => searchStore.results.filter((r) => r.type === 
 const noteResults = computed(() => searchStore.results.filter((r) => r.type === 'note'));
 
 function close() {
-  searchStore.open = false;
-  searchStore.clear();
+  searchStore.close();
 }
 
 function openFirst() {
