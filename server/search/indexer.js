@@ -97,17 +97,33 @@ async function reindexAll() {
     });
   }
 
-  // Clear indexes then batch-add
-  await meiliClient.index('tasks').deleteAllDocuments();
-  await meiliClient.index('notes').deleteAllDocuments();
+  // Clear both indexes, then wait for the deletions to fully complete before
+  // re-populating. Meilisearch operations are async on the server side — each
+  // call returns an EnqueuedTask whose taskUid we must poll until the work is
+  // actually done, otherwise addDocuments batches may land before (or during)
+  // the delete, and searches return zero results in the interim.
+  const [deleteTasksJob, deleteNotesJob] = await Promise.all([
+    meiliClient.index('tasks').deleteAllDocuments(),
+    meiliClient.index('notes').deleteAllDocuments(),
+  ]);
+  await Promise.all([
+    meiliClient.waitForTask(deleteTasksJob.taskUid),
+    meiliClient.waitForTask(deleteNotesJob.taskUid),
+  ]);
 
+  // Enqueue all batch-add operations, collecting their task UIDs as we go,
+  // then wait for every batch to be fully indexed before returning.
   const BATCH_SIZE = 500;
+  const addJobs = [];
   for (let i = 0; i < taskDocs.length; i += BATCH_SIZE) {
-    await meiliClient.index('tasks').addDocuments(taskDocs.slice(i, i + BATCH_SIZE));
+    const job = await meiliClient.index('tasks').addDocuments(taskDocs.slice(i, i + BATCH_SIZE));
+    addJobs.push(meiliClient.waitForTask(job.taskUid));
   }
   for (let i = 0; i < noteDocs.length; i += BATCH_SIZE) {
-    await meiliClient.index('notes').addDocuments(noteDocs.slice(i, i + BATCH_SIZE));
+    const job = await meiliClient.index('notes').addDocuments(noteDocs.slice(i, i + BATCH_SIZE));
+    addJobs.push(meiliClient.waitForTask(job.taskUid));
   }
+  await Promise.all(addJobs);
 
   return { tasks: taskDocs.length, notes: noteDocs.length };
 }
