@@ -107,8 +107,8 @@ async function reindexAll() {
     meiliClient.index('notes').deleteAllDocuments(),
   ]);
   await Promise.all([
-    meiliClient.waitForTask(deleteTasksJob.taskUid),
-    meiliClient.waitForTask(deleteNotesJob.taskUid),
+    meiliClient.tasks.waitForTask(deleteTasksJob.taskUid),
+    meiliClient.tasks.waitForTask(deleteNotesJob.taskUid),
   ]);
 
   // Enqueue all batch-add operations, collecting their task UIDs as we go,
@@ -117,11 +117,11 @@ async function reindexAll() {
   const addJobs = [];
   for (let i = 0; i < taskDocs.length; i += BATCH_SIZE) {
     const job = await meiliClient.index('tasks').addDocuments(taskDocs.slice(i, i + BATCH_SIZE));
-    addJobs.push(meiliClient.waitForTask(job.taskUid));
+    addJobs.push(meiliClient.tasks.waitForTask(job.taskUid));
   }
   for (let i = 0; i < noteDocs.length; i += BATCH_SIZE) {
     const job = await meiliClient.index('notes').addDocuments(noteDocs.slice(i, i + BATCH_SIZE));
-    addJobs.push(meiliClient.waitForTask(job.taskUid));
+    addJobs.push(meiliClient.tasks.waitForTask(job.taskUid));
   }
   await Promise.all(addJobs);
 
