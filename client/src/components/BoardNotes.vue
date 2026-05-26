@@ -205,7 +205,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, inject, nextTick } from 'vue';
+import { ref, computed, onMounted, watch, inject, nextTick } from 'vue';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { useNotesStore } from '@/stores/notes';
@@ -215,6 +215,7 @@ const props = defineProps({
   boardId: { type: String, required: true },
   boardName: { type: String, required: true },
   isOwner: { type: Boolean, default: false },
+  initialNoteId: { type: String, default: null },
 });
 
 defineEmits(['close']);
@@ -247,9 +248,18 @@ const renderedContent = computed(() => {
   return DOMPurify.sanitize(raw);
 });
 
-onMounted(() => {
-  notesStore.fetchNotes(props.boardId);
+onMounted(async () => {
+  await notesStore.fetchNotes(props.boardId);
+  openInitialNote();
 });
+
+watch(() => props.initialNoteId, openInitialNote);
+
+function openInitialNote() {
+  if (!props.initialNoteId) return;
+  const note = notesStore.notes.find((n) => n._id === props.initialNoteId);
+  if (note) openNote(note);
+}
 
 function formatDate(iso) {
   if (!iso) return '';

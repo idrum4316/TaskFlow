@@ -15,7 +15,7 @@
         <div class="border-b border-zinc-200 bg-white px-4 py-4 dark:border-zinc-800 dark:bg-zinc-900 sm:px-5">
           <div class="mb-3 flex items-center justify-between gap-3">
             <div>
-              <p class="text-xs font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-400">Workspace search</p>
+              <p class="text-xs font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-400">Search</p>
               <h2 class="text-lg font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">Find tasks and notes</h2>
             </div>
             <button
@@ -78,35 +78,6 @@
             <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Results include useful context like board, status, priority, due dates, labels, and last update.</p>
           </div>
 
-          <div class="mt-7 grid gap-3 sm:grid-cols-3">
-            <div class="rounded-xl border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-800/60">
-              <div class="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-white text-brand-600 shadow-card dark:bg-zinc-900 dark:text-brand-300">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Tasks</p>
-              <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Titles, descriptions, labels, and metadata.</p>
-            </div>
-            <div class="rounded-xl border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-800/60">
-              <div class="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-white text-brand-600 shadow-card dark:bg-zinc-900 dark:text-brand-300">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12" />
-                </svg>
-              </div>
-              <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Notes</p>
-              <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Board notes with content previews.</p>
-            </div>
-            <div class="rounded-xl border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-800/60">
-              <div class="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-white text-brand-600 shadow-card dark:bg-zinc-900 dark:text-brand-300">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
-                </svg>
-              </div>
-              <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Context</p>
-              <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">See where each result lives before opening.</p>
-            </div>
-          </div>
         </div>
 
         <!-- Loading -->
@@ -370,7 +341,10 @@ function selectResult(result) {
 }
 
 function goToResult(result) {
-  router.push({ name: 'board', params: { id: result.board_id } });
+  const query = {};
+  if (result.type === 'task') query.task = result.id;
+  else if (result.type === 'note') query.note = result.id;
+  router.push({ name: 'board', params: { id: result.board_id }, query });
   close();
 }
 
