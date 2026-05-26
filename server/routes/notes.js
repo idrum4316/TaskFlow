@@ -1,6 +1,7 @@
 const express = require('express');
 const { getBoardsDb } = require('../config/couch');
 const { requireAuth } = require('../middleware/auth');
+const { indexNote, deleteIndexedNote } = require('../search/indexer');
 
 const router = express.Router({ mergeParams: true });
 router.use(requireAuth);
@@ -95,6 +96,11 @@ router.post('/', async (req, res) => {
   try {
     const db = getBoardsDb();
     const result = await db.insert(doc);
+    try {
+      await indexNote({ ...doc, _id: result.id });
+    } catch (err) {
+      console.error('Failed to index note after creation:', err);
+    }
     res.status(201).json({ ...doc, _id: result.id, _rev: result.rev });
   } catch {
     res.status(500).json({ error: 'Failed to create note' });
@@ -129,6 +135,11 @@ router.put('/:noteId', async (req, res) => {
     };
 
     const result = await db.insert(updated);
+    try {
+      await indexNote({ ...updated, _rev: result.rev });
+    } catch (err) {
+      console.error('Failed to index note after update:', err);
+    }
     res.json({ ...updated, _rev: result.rev });
   } catch (err) {
     if (err.statusCode === 404) return res.status(404).json({ error: 'Note not found' });
@@ -162,6 +173,11 @@ router.delete('/:noteId', async (req, res) => {
     }
 
     await db.destroy(note._id, note._rev);
+    try {
+      await deleteIndexedNote(note._id);
+    } catch (err) {
+      console.error('Failed to delete indexed note:', err);
+    }
     res.status(204).end();
   } catch (err) {
     if (err.statusCode === 404) return res.status(404).json({ error: 'Note not found' });

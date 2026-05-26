@@ -74,10 +74,15 @@ export const useAdminStore = defineStore('admin', () => {
     return data;
   }
 
+  async function reindexSearch() {
+    const { data } = await api.post('/admin/search/reindex');
+    return data;
+  }
+
   return {
     users, settings, loading, inviteTokens, emailSettings,
     fetchUsers, resetPassword, toggleAdmin, fetchSettings, updateSettings,
     fetchInviteTokens, createInviteToken, revokeInviteToken,
-    fetchEmailSettings, updateEmailSettings, sendTestEmail,
+    fetchEmailSettings, updateEmailSettings, sendTestEmail, reindexSearch,
   };
 });

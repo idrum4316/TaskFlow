@@ -15,6 +15,19 @@
 
       <!-- Desktop right side (md+) -->
       <div class="hidden md:flex items-center gap-3">
+        <!-- Search trigger -->
+        <button
+          @click="searchStore.toggleOpen()"
+          class="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          aria-label="Search"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          </svg>
+        </button>
+
+        <div class="w-px h-4 bg-zinc-200 dark:bg-zinc-700" aria-hidden="true" />
+
         <!-- User avatar + name -->
         <div class="flex items-center gap-2">
           <div
@@ -129,6 +142,16 @@
           </span>
         </div>
 
+        <button
+          @click="searchStore.toggleOpen(); mobileMenuOpen = false"
+          class="flex items-center gap-2.5 w-full text-sm text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 font-medium px-3 py-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+        >
+          <svg class="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          </svg>
+          Search
+        </button>
+
         <RouterLink
           v-if="authStore.isAdmin"
           to="/admin"
@@ -166,6 +189,8 @@
         </button>
       </div>
     </div>
+
+    <GlobalSearch />
   </header>
 </template>
 
@@ -174,10 +199,13 @@ import { computed, ref, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useThemeStore } from '@/stores/theme';
+import { useSearchStore } from '@/stores/search';
 import AppLogo from '@/components/AppLogo.vue';
+import GlobalSearch from '@/components/GlobalSearch.vue';
 
 const authStore = useAuthStore();
 const themeStore = useThemeStore();
+const searchStore = useSearchStore();
 const route = useRoute();
 const mobileMenuOpen = ref(false);
 const initials = computed(() => {

@@ -4,6 +4,7 @@ const path = require('path');
 const cors = require('cors');
 const { initDb } = require('./config/couch');
 const { ensureBucket } = require('./config/s3');
+const { ensureIndexes } = require('./config/meili');
 const { runMigrations } = require('./migrations/runner');
 const authRoutes = require('./routes/auth');
 const boardRoutes = require('./routes/boards');
@@ -18,6 +19,7 @@ const attachmentRoutes = require('./routes/attachments');
 const linkRoutes = require('./routes/links');
 const noteRoutes = require('./routes/notes');
 const completionRoutes = require('./routes/completions');
+const searchRoutes = require('./routes/search');
 const { attachWebSocketServer } = require('./events/changes');
 
 const app = express();
@@ -37,6 +39,7 @@ app.use('/api/tasks/:id/attachments', attachmentRoutes);
 app.use('/api/tasks/:id/links', linkRoutes);
 app.use('/api/tasks/:id/completions', completionRoutes);
 app.use('/api/boards/:id/notes', noteRoutes);
+app.use('/api/search', searchRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/account', accountRoutes);
 
@@ -51,6 +54,7 @@ app.get(/^\/(?!api).*/, (_req, res) => {
 
 async function start() {
   await initDb();
+  await ensureIndexes();
   await ensureBucket();
   await runMigrations();
   const server = app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

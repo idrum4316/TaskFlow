@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer');
 const { getUsersDb, getSettingsDb, getSetting, setSetting } = require('../config/couch');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { wrapEmail } = require('../utils/emailTemplate');
+const { reindexAll } = require('../search/indexer');
 
 const router = express.Router();
 const SALT_ROUNDS = 12;
@@ -323,6 +324,17 @@ router.post('/email-settings/test', async (req, res) => {
       ? `SMTP error ${err.responseCode}: ${err.response}`
       : err.message;
     res.status(500).json({ error: `Failed to send test email: ${detail}` });
+  }
+});
+
+// POST /api/admin/search/reindex — rebuild Meilisearch indexes from CouchDB
+router.post('/search/reindex', async (_req, res) => {
+  try {
+    const result = await reindexAll();
+    res.json({ message: 'Reindex complete', tasks: result.tasks, notes: result.notes });
+  } catch (err) {
+    console.error('Reindex failed:', err);
+    res.status(500).json({ error: 'Failed to rebuild search index' });
   }
 });
 
