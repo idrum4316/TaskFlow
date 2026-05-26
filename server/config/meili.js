@@ -20,12 +20,14 @@ async function ensureIndexes() {
         await index.fetchInfo();
       } catch (err) {
         if (err.statusCode === 404 || err.code === 'index_not_found') {
-          await meiliClient.createIndex(name, { primaryKey: 'id' });
+          const job = await meiliClient.createIndex(name, { primaryKey: 'id' });
+          await meiliClient.tasks.waitForTask(job.taskUid);
         } else {
           throw err;
         }
       }
-      await index.updateSettings(INDEX_SETTINGS);
+      const job = await index.updateSettings(INDEX_SETTINGS);
+      await meiliClient.tasks.waitForTask(job.taskUid);
       console.log(`Meilisearch index ready: ${name}`);
     } catch (err) {
       console.error(`Failed to ensure Meilisearch index ${name}:`, err.message);
