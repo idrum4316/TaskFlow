@@ -324,7 +324,8 @@
       :board-id="board._id"
       :board-name="board.name"
       :is-owner="isOwner"
-      @close="showNotes = false"
+      :initial-note-id="initialNoteId"
+      @close="showNotes = false; initialNoteId = null"
     />
 
     <!-- Share board modal -->
@@ -513,11 +514,36 @@ const views = [
 const showForm = ref(false);
 const editingTask = ref(null);
 const defaultStatus = ref('todo');
+const initialNoteId = ref(null);
 
 async function load() {
   tasksStore.clearTasks();
   if (!boardsStore.boards.length) await boardsStore.fetchBoards();
   await tasksStore.fetchTasks(boardId.value);
+  await handleSearchQuery();
+}
+
+async function handleSearchQuery() {
+  const { task: taskId, note: noteId } = route.query;
+
+  if (taskId && typeof taskId === 'string') {
+    const task = tasksStore.tasks.find((t) => t._id === taskId);
+    if (task) {
+      showForm.value = false;
+      await nextTick();
+      editingTask.value = task;
+      showForm.value = true;
+      router.replace({ query: { ...route.query, task: undefined } });
+    }
+  }
+
+  if (noteId && typeof noteId === 'string') {
+    showNotes.value = true;
+    initialNoteId.value = null;
+    await nextTick();
+    initialNoteId.value = noteId;
+    router.replace({ query: { ...route.query, note: undefined } });
+  }
 }
 
 function closeBoardMenu(e) {
@@ -535,6 +561,7 @@ onUnmounted(() => {
   sharesStore.clearShares();    notesStore.clearNotes();  document.removeEventListener('click', closeBoardMenu);
 });
 watch(boardId, load);
+watch(() => route.query, handleSearchQuery, { deep: true });
 
 function openCreate() {
   defaultStatus.value = boardStatuses.value[0]?.id || 'todo';

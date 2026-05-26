@@ -4,6 +4,7 @@ const { getTasksDb, getBoardsDb } = require('../config/couch');
 const { s3, S3_BUCKET, isS3Available } = require('../config/s3');
 const { requireAuth } = require('../middleware/auth');
 const { validateRecurrence, computeNextDueDate } = require('../utils/recurrence');
+const { indexTask, deleteIndexedTask } = require('../search/indexer');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -166,6 +167,11 @@ router.post('/', async (req, res) => {
 
   try {
     const result = await getTasksDb().insert(doc);
+    try {
+      await indexTask({ ...doc, _id: result.id });
+    } catch (err) {
+      console.error('Failed to index task after creation:', err);
+    }
     res.status(201).json({ ...doc, _id: result.id, _rev: result.rev });
   } catch {
     res.status(500).json({ error: 'Failed to create task' });
@@ -243,6 +249,11 @@ router.put('/:id', async (req, res) => {
 
   try {
     const result = await db.insert(updated);
+    try {
+      await indexTask({ ...updated, _rev: result.rev });
+    } catch (err) {
+      console.error('Failed to index task after update:', err);
+    }
     res.json({ ...updated, _rev: result.rev });
   } catch {
     res.status(500).json({ error: 'Failed to update task' });
@@ -351,6 +362,11 @@ router.delete('/:id', async (req, res) => {
     }
 
     await db.destroy(existing._id, existing._rev);
+    try {
+      await deleteIndexedTask(existing._id);
+    } catch (err) {
+      console.error('Failed to delete indexed task:', err);
+    }
     res.status(204).end();
   } catch {
     res.status(500).json({ error: 'Failed to delete task' });
@@ -411,6 +427,11 @@ router.post('/:id/complete-occurrence', async (req, res) => {
 
   try {
     const result = await db.insert(updated);
+    try {
+      await indexTask({ ...updated, _id: existing._id, _rev: result.rev });
+    } catch (err) {
+      console.error('Failed to index task after complete-occurrence:', err);
+    }
     res.json({ ...updated, _rev: result.rev });
   } catch {
     res.status(500).json({ error: 'Failed to complete occurrence' });
@@ -493,8 +514,18 @@ router.put('/:id/reorder', async (req, res) => {
         }
       }
       saved.position = renumbered.find((r) => r._id === saved._id)?.position ?? saved.position;
+      try {
+        await indexTask(saved);
+      } catch (err) {
+        console.error('Failed to index task after reorder:', err);
+      }
       res.json({ ...saved, renumbered });
     } else {
+      try {
+        await indexTask(saved);
+      } catch (err) {
+        console.error('Failed to index task after reorder:', err);
+      }
       res.json(saved);
     }
   } catch {

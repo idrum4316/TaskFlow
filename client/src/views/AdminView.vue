@@ -108,6 +108,42 @@
       </div>
     </section>
 
+    <!-- Search index section -->
+    <section class="mb-10">
+      <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Search Index</h3>
+      <div class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Rebuild search index</p>
+            <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              Clears and re-indexes all tasks and notes in Meilisearch. Useful after adding search to an existing deployment.
+            </p>
+          </div>
+          <button
+            @click="handleReindex"
+            :disabled="reindexStatus.loading"
+            class="btn-primary flex-shrink-0"
+          >
+            {{ reindexStatus.loading ? 'Reindexing…' : 'Rebuild index' }}
+          </button>
+        </div>
+        <div
+          v-if="reindexStatus.error"
+          role="alert"
+          class="mt-3 flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2.5 rounded-lg dark:text-red-400 dark:bg-red-950/30 dark:border-red-800"
+        >
+          {{ reindexStatus.error }}
+        </div>
+        <div
+          v-if="reindexStatus.success"
+          role="status"
+          class="mt-3 flex items-start gap-2 text-sm text-green-700 bg-green-50 border border-green-200 px-3 py-2.5 rounded-lg dark:text-green-400 dark:bg-green-950/30 dark:border-green-800"
+        >
+          {{ reindexStatus.success }}
+        </div>
+      </div>
+    </section>
+
     <!-- Invitation links section -->
     <section class="mb-10">
       <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Invitation Links</h3>
@@ -406,6 +442,12 @@ const resetModal = reactive({
   success: false,
 });
 
+const reindexStatus = reactive({
+  loading: false,
+  error: '',
+  success: '',
+});
+
 onMounted(async () => {
   await Promise.all([adminStore.fetchUsers(), adminStore.fetchSettings(), adminStore.fetchInviteTokens(), adminStore.fetchEmailSettings()]);
   Object.assign(emailForm, adminStore.emailSettings);
@@ -515,6 +557,21 @@ async function handleResetPassword() {
     resetModal.error = err.response?.data?.error || 'Failed to reset password';
   } finally {
     resetModal.loading = false;
+  }
+}
+
+async function handleReindex() {
+  reindexStatus.loading = true;
+  reindexStatus.error = '';
+  reindexStatus.success = '';
+  try {
+    const result = await adminStore.reindexSearch();
+    reindexStatus.success = `Reindexed ${result.tasks} tasks and ${result.notes} notes.`;
+    setTimeout(() => { reindexStatus.success = ''; }, 5000);
+  } catch (err) {
+    reindexStatus.error = err.response?.data?.error || 'Failed to rebuild search index';
+  } finally {
+    reindexStatus.loading = false;
   }
 }
 </script>
