@@ -1,6 +1,21 @@
 const { getBoardsDb, getTasksDb } = require('../config/couch');
 const { meiliClient } = require('../config/meili');
 
+// Wait for a Meilisearch EnqueuedTask to reach a terminal state and throw a
+// descriptive error if it did not succeed.  waitForTask() resolves on *any*
+// terminal status (succeeded | failed | canceled), so callers that omit this
+// check silently swallow failures.
+async function assertTaskSucceeded(enqueued, label) {
+  const task = await meiliClient.tasks.waitForTask(enqueued.taskUid);
+  if (task.status !== 'succeeded') {
+    const detail = task.error
+      ? `${task.error.code}: ${task.error.message}`
+      : `status=${task.status}`;
+    throw new Error(`Meilisearch task failed [${label}] — ${detail}`);
+  }
+  return task;
+}
+
 async function indexTask(taskDoc) {
   try {
     const doc = {
@@ -97,31 +112,29 @@ async function reindexAll() {
     });
   }
 
-  // Clear both indexes, then wait for the deletions to fully complete before
-  // re-populating. Meilisearch operations are async on the server side — each
-  // call returns an EnqueuedTask whose taskUid we must poll until the work is
-  // actually done, otherwise addDocuments batches may land before (or during)
-  // the delete, and searches return zero results in the interim.
+  // Clear both indexes and wait for deletions to fully complete before
+  // re-populating.  If either deletion fails, throw immediately rather than
+  // pushing documents into a broken index.
   const [deleteTasksJob, deleteNotesJob] = await Promise.all([
     meiliClient.index('tasks').deleteAllDocuments(),
     meiliClient.index('notes').deleteAllDocuments(),
   ]);
   await Promise.all([
-    meiliClient.tasks.waitForTask(deleteTasksJob.taskUid),
-    meiliClient.tasks.waitForTask(deleteNotesJob.taskUid),
+    assertTaskSucceeded(deleteTasksJob, 'deleteAllDocuments(tasks)'),
+    assertTaskSucceeded(deleteNotesJob, 'deleteAllDocuments(notes)'),
   ]);
 
-  // Enqueue all batch-add operations, collecting their task UIDs as we go,
-  // then wait for every batch to be fully indexed before returning.
+  // Enqueue all batch-add operations, collecting their completion promises,
+  // then wait for every batch to fully land before returning the count.
   const BATCH_SIZE = 500;
   const addJobs = [];
   for (let i = 0; i < taskDocs.length; i += BATCH_SIZE) {
     const job = await meiliClient.index('tasks').addDocuments(taskDocs.slice(i, i + BATCH_SIZE));
-    addJobs.push(meiliClient.tasks.waitForTask(job.taskUid));
+    addJobs.push(assertTaskSucceeded(job, `addDocuments(tasks, offset=${i})`));
   }
   for (let i = 0; i < noteDocs.length; i += BATCH_SIZE) {
     const job = await meiliClient.index('notes').addDocuments(noteDocs.slice(i, i + BATCH_SIZE));
-    addJobs.push(meiliClient.tasks.waitForTask(job.taskUid));
+    addJobs.push(assertTaskSucceeded(job, `addDocuments(notes, offset=${i})`));
   }
   await Promise.all(addJobs);
 

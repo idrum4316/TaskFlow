@@ -11,6 +11,17 @@ const INDEX_SETTINGS = {
   sortableAttributes: ['created_at', 'updated_at'],
 };
 
+async function assertTaskSucceeded(enqueued, label) {
+  const task = await meiliClient.tasks.waitForTask(enqueued.taskUid);
+  if (task.status !== 'succeeded') {
+    const detail = task.error
+      ? `${task.error.code}: ${task.error.message}`
+      : `status=${task.status}`;
+    throw new Error(`Meilisearch task failed [${label}] — ${detail}`);
+  }
+  return task;
+}
+
 async function ensureIndexes() {
   const indexNames = ['tasks', 'notes'];
   for (const name of indexNames) {
@@ -21,13 +32,13 @@ async function ensureIndexes() {
       } catch (err) {
         if (err.statusCode === 404 || err.code === 'index_not_found') {
           const job = await meiliClient.createIndex(name, { primaryKey: 'id' });
-          await meiliClient.tasks.waitForTask(job.taskUid);
+          await assertTaskSucceeded(job, `createIndex(${name})`);
         } else {
           throw err;
         }
       }
       const job = await index.updateSettings(INDEX_SETTINGS);
-      await meiliClient.tasks.waitForTask(job.taskUid);
+      await assertTaskSucceeded(job, `updateSettings(${name})`);
       console.log(`Meilisearch index ready: ${name}`);
     } catch (err) {
       console.error(`Failed to ensure Meilisearch index ${name}:`, err.message);
