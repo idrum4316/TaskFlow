@@ -31,7 +31,7 @@ async function indexTask(taskDoc) {
       created_at: taskDoc.created_at,
       updated_at: taskDoc.updated_at,
     };
-    await meiliClient.index('tasks').addDocuments([doc]);
+    await meiliClient.index('tasks').addDocuments([doc], { primaryKey: 'id' });
   } catch (err) {
     console.error('Failed to index task:', err.message);
   }
@@ -48,7 +48,7 @@ async function indexNote(noteDoc) {
       created_at: noteDoc.created_at,
       updated_at: noteDoc.updated_at,
     };
-    await meiliClient.index('notes').addDocuments([doc]);
+    await meiliClient.index('notes').addDocuments([doc], { primaryKey: 'id' });
   } catch (err) {
     console.error('Failed to index note:', err.message);
   }
@@ -129,11 +129,11 @@ async function reindexAll() {
   const BATCH_SIZE = 500;
   const addJobs = [];
   for (let i = 0; i < taskDocs.length; i += BATCH_SIZE) {
-    const job = await meiliClient.index('tasks').addDocuments(taskDocs.slice(i, i + BATCH_SIZE));
+    const job = await meiliClient.index('tasks').addDocuments(taskDocs.slice(i, i + BATCH_SIZE), { primaryKey: 'id' });
     addJobs.push(assertTaskSucceeded(job, `addDocuments(tasks, offset=${i})`));
   }
   for (let i = 0; i < noteDocs.length; i += BATCH_SIZE) {
-    const job = await meiliClient.index('notes').addDocuments(noteDocs.slice(i, i + BATCH_SIZE));
+    const job = await meiliClient.index('notes').addDocuments(noteDocs.slice(i, i + BATCH_SIZE), { primaryKey: 'id' });
     addJobs.push(assertTaskSucceeded(job, `addDocuments(notes, offset=${i})`));
   }
   await Promise.all(addJobs);

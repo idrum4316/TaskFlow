@@ -28,7 +28,13 @@ async function ensureIndexes() {
     try {
       const index = meiliClient.index(name);
       try {
-        await index.fetchInfo();
+        const info = await index.fetchInfo();
+        // Repair indexes that exist but were created without a primary key
+        // (e.g. after a volume wipe where settings were lost).
+        if (!info.primaryKey) {
+          const job = await meiliClient.updateIndex(name, { primaryKey: 'id' });
+          await assertTaskSucceeded(job, `updateIndex(${name})`);
+        }
       } catch (err) {
         if (err.statusCode === 404 || err.code === 'index_not_found') {
           const job = await meiliClient.createIndex(name, { primaryKey: 'id' });
