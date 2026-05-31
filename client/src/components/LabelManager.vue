@@ -1,8 +1,8 @@
 <template>
   <div class="fixed inset-0 z-50 flex" role="dialog" aria-modal="true" aria-label="Manage labels">
-    <div class="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm animate-fade-in" @click="$emit('close')" aria-hidden="true" />
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in" @click="$emit('close')" aria-hidden="true" />
 
-    <div class="relative ml-auto w-full max-w-md bg-white dark:bg-zinc-900 shadow-drawer flex flex-col h-full animate-slide-in-right">
+    <div class="relative ml-auto w-full max-w-md bg-white dark:bg-zinc-900 shadow-drawer border-l border-zinc-200 dark:border-zinc-700 flex flex-col h-full animate-slide-in-right">
       <!-- Header -->
       <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-700 flex-shrink-0">
         <div>

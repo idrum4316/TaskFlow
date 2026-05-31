@@ -6,9 +6,9 @@
     :aria-label="`Share ${boardName}`"
   >
     <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="$emit('close')" />
-    <div class="relative bg-white dark:bg-zinc-800 rounded-2xl shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]">
+    <div class="relative bg-white dark:bg-zinc-900 rounded-2xl shadow-modal border border-zinc-200 dark:border-zinc-700 w-full max-w-lg flex flex-col max-h-[90vh] animate-scale-in">
       <!-- Header -->
-      <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-zinc-700">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-zinc-800">
         <div>
           <h2 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">Share Board</h2>
           <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5 truncate max-w-xs">{{ boardName }}</p>
@@ -25,19 +25,19 @@
       </div>
 
       <!-- Invite form -->
-      <div class="px-6 py-4 border-b border-zinc-100 dark:border-zinc-700">
+      <div class="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800">
         <p class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">Invite someone</p>
         <form @submit.prevent="handleInvite" class="flex gap-2">
           <input
             v-model="inviteEmail"
             type="email"
             placeholder="Email address"
-            class="flex-1 text-sm border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
+            class="flex-1 text-sm border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
             :disabled="inviting"
           />
           <select
             v-model="inviteAccess"
-            class="text-sm border border-zinc-200 dark:border-zinc-600 rounded-xl px-2 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300"
+            class="text-sm border border-zinc-200 dark:border-zinc-700 rounded-xl px-2 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
             :disabled="inviting"
           >
             <option value="read">Read</option>
@@ -70,7 +70,7 @@
           <li
             v-for="share in sharesStore.shares"
             :key="share.user_id"
-            class="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-700/50 rounded-xl px-4 py-3"
+            class="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-800/60 rounded-xl px-4 py-3"
           >
             <!-- Avatar -->
             <div class="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 flex items-center justify-center text-sm font-semibold flex-shrink-0 select-none">
@@ -97,7 +97,7 @@
             <select
               :value="share.access"
               @change="handleAccessChange(share.user_id, $event.target.value)"
-              class="text-xs border border-zinc-200 dark:border-zinc-600 rounded-lg px-2 py-1 bg-white dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              class="text-xs border border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-1 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               <option value="read">Read</option>
               <option value="write">Read & Write</option>

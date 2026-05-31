@@ -1,8 +1,8 @@
 <template>
   <div class="fixed inset-0 z-50 flex items-stretch justify-center p-0 lg:p-4" role="dialog" aria-modal="true" aria-label="Board Notes">
-    <div class="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm animate-fade-in" @click="requestClose" aria-hidden="true" />
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in" @click="requestClose" aria-hidden="true" />
 
-    <div class="relative flex h-full w-full max-w-none flex-col overflow-hidden bg-white shadow-modal animate-scale-in dark:bg-zinc-900 lg:h-[calc(100vh-2rem)] lg:max-w-[96rem] lg:rounded-3xl lg:border lg:border-zinc-200 dark:lg:border-zinc-800">
+    <div class="relative flex h-full w-full max-w-none flex-col overflow-hidden bg-white shadow-modal animate-scale-in dark:bg-zinc-900 lg:h-[calc(100vh-2rem)] lg:max-w-[96rem] lg:rounded-3xl lg:border lg:border-zinc-200 dark:lg:border-zinc-700">
       <!-- Header -->
       <header class="flex flex-shrink-0 items-center justify-between gap-4 border-b border-zinc-200 px-4 py-3.5 dark:border-zinc-700 sm:px-6">
         <div class="flex min-w-0 items-center gap-3">

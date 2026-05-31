@@ -331,9 +331,9 @@
         class="fixed inset-0 z-50 flex items-center justify-center px-4"
         @mousedown.self="resetModal.open = false"
       >
-        <div class="fixed inset-0 bg-black/40" aria-hidden="true" />
+        <div class="fixed inset-0 bg-black/40 backdrop-blur-sm" aria-hidden="true" />
         <div
-          class="relative bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-xl w-full max-w-sm p-6 animate-slide-up"
+          class="relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-modal w-full max-w-sm p-6 animate-scale-in"
           role="dialog"
           aria-modal="true"
           aria-labelledby="reset-title"

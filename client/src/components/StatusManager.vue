@@ -1,8 +1,8 @@
 <template>
   <div class="fixed inset-0 z-50 flex" role="dialog" aria-modal="true" aria-label="Manage statuses">
-    <div class="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm animate-fade-in" @click="$emit('close')" aria-hidden="true" />
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in" @click="$emit('close')" aria-hidden="true" />
 
-    <div class="relative ml-auto w-full max-w-md bg-white dark:bg-zinc-900 shadow-drawer flex flex-col h-full animate-slide-in-right">
+    <div class="relative ml-auto w-full max-w-md bg-white dark:bg-zinc-900 shadow-drawer border-l border-zinc-200 dark:border-zinc-700 flex flex-col h-full animate-slide-in-right">
       <!-- Header -->
       <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-700 flex-shrink-0">
         <div>
@@ -99,8 +99,8 @@
         <!-- Reassignment dialog -->
         <Teleport to="body">
           <div v-if="pendingDelete" class="fixed inset-0 z-[60] flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Reassign tasks">
-            <div class="absolute inset-0 bg-zinc-900/50 backdrop-blur-sm" @click="cancelDelete" aria-hidden="true" />
-            <div class="relative bg-white dark:bg-zinc-900 rounded-2xl shadow-xl max-w-sm w-full mx-4 p-6 space-y-4">
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="cancelDelete" aria-hidden="true" />
+            <div class="relative bg-white dark:bg-zinc-900 rounded-2xl shadow-modal border border-zinc-200 dark:border-zinc-700 max-w-sm w-full mx-4 p-6 space-y-4 animate-scale-in">
               <h3 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">Reassign Tasks</h3>
               <p class="text-sm text-zinc-600 dark:text-zinc-400">
                 <span class="font-medium text-zinc-800 dark:text-zinc-200">"{{ pendingDelete.label }}"</span>
