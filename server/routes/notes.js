@@ -38,7 +38,10 @@ router.get('/', async (req, res) => {
     });
     const notes = rows
       .map((r) => r.doc)
-      .sort((a, b) => a.updated_at.localeCompare(b.updated_at) * -1);
+      .sort((a, b) => {
+        if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+        return a.updated_at.localeCompare(b.updated_at) * -1;
+      });
     res.json(notes);
   } catch {
     res.status(500).json({ error: 'Failed to fetch notes' });
@@ -70,7 +73,7 @@ router.get('/:noteId', async (req, res) => {
 
 // POST /api/boards/:id/notes
 router.post('/', async (req, res) => {
-  const { title, content } = req.body;
+  const { title, content, pinned } = req.body;
   if (!title || !title.trim()) return res.status(400).json({ error: 'title is required' });
 
   try {
@@ -88,7 +91,8 @@ router.post('/', async (req, res) => {
     user_id: req.user.sub,
     username: req.user.username,
     title: title.trim(),
-    content: (content || '').trim(),
+    content: typeof content === 'string' ? content : '',
+    pinned: pinned === true,
     created_at: now,
     updated_at: now,
   };
@@ -109,7 +113,7 @@ router.post('/', async (req, res) => {
 
 // PUT /api/boards/:id/notes/:noteId
 router.put('/:noteId', async (req, res) => {
-  const { title, content } = req.body;
+  const { title, content, pinned } = req.body;
   if (!title || !title.trim()) return res.status(400).json({ error: 'title is required' });
 
   try {
@@ -130,7 +134,8 @@ router.put('/:noteId', async (req, res) => {
     const updated = {
       ...existing,
       title: title.trim(),
-      content: (content || '').trim(),
+      content: typeof content === 'string' ? content : existing.content || '',
+      pinned: typeof pinned === 'boolean' ? pinned : !!existing.pinned,
       updated_at: new Date().toISOString(),
     };
 

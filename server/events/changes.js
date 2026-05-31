@@ -64,9 +64,31 @@ function startBoardsFeed() {
   boardsFeed = getBoardsDb().changesReader.start({ since: 'now', includeDocs: true, wait: false });
 
   boardsFeed.on('change', (change) => {
-    if (change.deleted) return;
+    if (change.deleted) {
+      for (const [, client] of clients) {
+        send(client.ws, 'change', { type: 'deleted', id: change.id });
+      }
+      return;
+    }
+
     const doc = change.doc;
-    if (!doc || doc.type !== 'board') return;
+    if (!doc) return;
+
+    if (doc.type === 'board_note') {
+      for (const [, client] of clients) {
+        if (client.boardId === doc.board_id) {
+          send(client.ws, 'change', {
+            type: 'board_note',
+            action: 'upsert',
+            id: change.id,
+            doc,
+          });
+        }
+      }
+      return;
+    }
+
+    if (doc.type !== 'board') return;
 
     for (const [, client] of clients) {
       if (client.boardId === change.id) {

@@ -45,6 +45,7 @@ async function indexNote(noteDoc) {
       board_id: noteDoc.board_id,
       title: noteDoc.title,
       content: noteDoc.content || '',
+      pinned: !!noteDoc.pinned,
       created_at: noteDoc.created_at,
       updated_at: noteDoc.updated_at,
     };
@@ -107,6 +108,7 @@ async function reindexAll() {
       board_id: doc.board_id,
       title: doc.title,
       content: doc.content || '',
+      pinned: !!doc.pinned,
       created_at: doc.created_at,
       updated_at: doc.updated_at,
     });

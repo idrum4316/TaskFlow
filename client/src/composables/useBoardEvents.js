@@ -1,6 +1,7 @@
 import { watch, onUnmounted, ref } from 'vue';
 import { useBoardsStore } from '@/stores/boards';
 import { useTasksStore } from '@/stores/tasks';
+import { useNotesStore } from '@/stores/notes';
 
 const RECONNECT_BASE = 1000;
 const RECONNECT_MAX = 30000;
@@ -98,9 +99,11 @@ export function useBoardEvents(boardId) {
   function handleChange(data) {
     const tasksStore = useTasksStore();
     const boardsStore = useBoardsStore();
+    const notesStore = useNotesStore();
 
     if (data.type === 'deleted') {
       tasksStore.tasks = tasksStore.tasks.filter((t) => t._id !== data.id);
+      notesStore.removeNote(data.id);
       return;
     }
 
@@ -123,6 +126,10 @@ export function useBoardEvents(boardId) {
         });
       }
       tasksStore.sortByPosition();
+    }
+
+    if (data.type === 'board_note' && data.action === 'upsert') {
+      notesStore.upsertNote(data.doc);
     }
 
     if (data.type === 'board' && data.action === 'upsert') {

@@ -7,11 +7,30 @@ export const useNotesStore = defineStore('notes', () => {
   const loading = ref(false);
   const saving = ref(false);
 
+  function sortNotes() {
+    notes.value = [...notes.value].sort((a, b) => {
+      if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+      return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
+    });
+  }
+
+  function upsertNote(note) {
+    const idx = notes.value.findIndex((n) => n._id === note._id);
+    if (idx === -1) notes.value.unshift(note);
+    else notes.value[idx] = note;
+    sortNotes();
+  }
+
+  function removeNote(noteId) {
+    notes.value = notes.value.filter((n) => n._id !== noteId);
+  }
+
   async function fetchNotes(boardId) {
     loading.value = true;
     try {
       const { data } = await api.get(`/boards/${boardId}/notes`);
       notes.value = data;
+      sortNotes();
     } catch {
       // non-critical
     } finally {
@@ -21,9 +40,7 @@ export const useNotesStore = defineStore('notes', () => {
 
   async function fetchNote(boardId, noteId) {
     const { data } = await api.get(`/boards/${boardId}/notes/${noteId}`);
-    const idx = notes.value.findIndex((n) => n._id === noteId);
-    if (idx === -1) notes.value.unshift(data);
-    else notes.value[idx] = data;
+    upsertNote(data);
     return data;
   }
 
@@ -31,7 +48,7 @@ export const useNotesStore = defineStore('notes', () => {
     saving.value = true;
     try {
       const { data } = await api.post(`/boards/${boardId}/notes`, payload);
-      notes.value.unshift(data);
+      upsertNote(data);
       return data;
     } finally {
       saving.value = false;
@@ -42,8 +59,7 @@ export const useNotesStore = defineStore('notes', () => {
     saving.value = true;
     try {
       const { data } = await api.put(`/boards/${boardId}/notes/${noteId}`, payload);
-      const idx = notes.value.findIndex((n) => n._id === noteId);
-      if (idx !== -1) notes.value[idx] = data;
+      upsertNote(data);
       return data;
     } finally {
       saving.value = false;
@@ -52,12 +68,12 @@ export const useNotesStore = defineStore('notes', () => {
 
   async function deleteNote(boardId, noteId) {
     await api.delete(`/boards/${boardId}/notes/${noteId}`);
-    notes.value = notes.value.filter((n) => n._id !== noteId);
+    removeNote(noteId);
   }
 
   function clearNotes() {
     notes.value = [];
   }
 
-  return { notes, loading, saving, fetchNotes, fetchNote, createNote, updateNote, deleteNote, clearNotes };
+  return { notes, loading, saving, fetchNotes, fetchNote, createNote, updateNote, deleteNote, clearNotes, upsertNote, removeNote, sortNotes };
 });
