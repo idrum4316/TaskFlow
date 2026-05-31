@@ -8,14 +8,14 @@
   >
     <!-- Dimmed backdrop -->
     <div
-      class="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm animate-fade-in"
+      class="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
       @click="$emit('close')"
       aria-hidden="true"
     />
 
     <!-- Modal panel — wider for existing tasks, compact for new -->
     <div :class="[
-      'relative bg-white dark:bg-zinc-900 shadow-modal rounded-xl flex flex-col animate-scale-in',
+      'relative bg-white dark:bg-zinc-900 shadow-modal rounded-2xl border border-zinc-200 dark:border-zinc-700 flex flex-col animate-scale-in',
       task ? 'w-full max-w-4xl max-h-[90vh]' : 'w-full max-w-md max-h-[90vh]',
     ]">
       <!-- Modal header -->

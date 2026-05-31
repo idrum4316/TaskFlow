@@ -469,8 +469,8 @@
     <!-- Delete confirmation -->
     <Teleport to="body">
       <div v-if="pendingDelete" class="fixed inset-0 z-[60] flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Delete note">
-        <div class="absolute inset-0 bg-zinc-900/50 backdrop-blur-sm" @click="pendingDelete = null" aria-hidden="true" />
-        <div class="relative mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="pendingDelete = null" aria-hidden="true" />
+        <div class="relative mx-4 w-full max-w-sm rounded-2xl bg-white border border-zinc-200 dark:border-zinc-700 p-6 shadow-modal animate-scale-in dark:bg-zinc-900">
           <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-300">
             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79" />
