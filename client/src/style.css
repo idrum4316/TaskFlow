@@ -26,6 +26,14 @@
 
   .scrollbar-none { scrollbar-width: none; }
   .scrollbar-none::-webkit-scrollbar { display: none; }
+
+  /* Thick scrollbars (accessibility) */
+  .thick-scrollbars { scrollbar-width: auto; }
+  .thick-scrollbars * { scrollbar-width: auto; }
+  .thick-scrollbars::-webkit-scrollbar,
+  .thick-scrollbars ::-webkit-scrollbar { width: 12px; height: 12px; }
+  .thick-scrollbars .scrollbar-none { scrollbar-width: none; }
+  .thick-scrollbars .scrollbar-none::-webkit-scrollbar { display: none; }
 }
 
 @layer components {

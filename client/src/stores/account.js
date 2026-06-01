@@ -5,6 +5,7 @@ import api from '@/api/client';
 export const useAccountStore = defineStore('account', () => {
   const mfaEnabled = ref(false);
   const mfaSetup = ref(null); // { secret, qr, otpauth_url }
+  const preferences = ref({});
 
   async function changePassword(current_password, new_password) {
     await api.put('/account/password', { current_password, new_password });
@@ -34,5 +35,21 @@ export const useAccountStore = defineStore('account', () => {
     return data;
   }
 
-  return { mfaEnabled, mfaSetup, changePassword, fetchMfaStatus, startMfaSetup, verifyMfaSetup, disableMfa };
+  async function fetchPreferences() {
+    const { data } = await api.get('/account/preferences');
+    preferences.value = data;
+    return data;
+  }
+
+  async function updatePreferences(patch) {
+    const { data } = await api.put('/account/preferences', patch);
+    preferences.value = data;
+    return data;
+  }
+
+  return {
+    mfaEnabled, mfaSetup, preferences,
+    changePassword, fetchMfaStatus, startMfaSetup, verifyMfaSetup, disableMfa,
+    fetchPreferences, updatePreferences,
+  };
 });

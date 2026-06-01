@@ -3,10 +3,44 @@
     <!-- Page header -->
     <div class="mb-8">
       <h2 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Settings</h2>
-      <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Manage your password and security settings</p>
+      <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Manage your password, security, and accessibility settings</p>
     </div>
 
     <div class="space-y-8 max-w-xl">
+      <!-- Accessibility -->
+      <section>
+        <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Accessibility</h3>
+        <div class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl p-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <p id="thick-scrollbars-label" class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Thick scrollbars</p>
+              <p class="text-xs text-zinc-500 dark:text-zinc-400">Make scrollbars twice as wide for easier grabbing</p>
+            </div>
+            <button
+              @click="toggleThickScrollbars"
+              :disabled="a11yLoading"
+              class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"
+              :class="accountStore.preferences?.thick_scrollbars ? 'bg-brand-600' : 'bg-zinc-300 dark:bg-zinc-600'"
+              :aria-checked="accountStore.preferences?.thick_scrollbars"
+              aria-labelledby="thick-scrollbars-label"
+              role="switch"
+            >
+              <span
+                class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                :class="accountStore.preferences?.thick_scrollbars ? 'translate-x-6' : 'translate-x-1'"
+              />
+            </button>
+          </div>
+          <div
+            v-if="a11yError"
+            role="alert"
+            class="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2 rounded-lg dark:text-red-400 dark:bg-red-950/30 dark:border-red-800"
+          >
+            {{ a11yError }}
+          </div>
+        </div>
+      </section>
+
       <!-- Change Password -->
       <section>
         <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Change password</h3>
@@ -260,6 +294,36 @@ import { useAccountStore } from '@/stores/account';
 
 const accountStore = useAccountStore();
 
+// --- Accessibility ---
+const a11yLoading = ref(false);
+const a11yError = ref('');
+
+onMounted(async () => {
+  try {
+    await accountStore.fetchPreferences();
+  } catch {
+    // ignore
+  }
+  try {
+    await accountStore.fetchMfaStatus();
+  } finally {
+    mfaLoading.value = false;
+  }
+});
+
+async function toggleThickScrollbars() {
+  a11yError.value = '';
+  a11yLoading.value = true;
+  try {
+    const next = !accountStore.preferences?.thick_scrollbars;
+    await accountStore.updatePreferences({ thick_scrollbars: next });
+  } catch (err) {
+    a11yError.value = err.response?.data?.error || 'Failed to save preference';
+  } finally {
+    a11yLoading.value = false;
+  }
+}
+
 // --- Password ---
 const pw = ref({
   current: '',
@@ -305,14 +369,6 @@ const disableStep = ref(null);
 const disableCode = ref('');
 const disableError = ref('');
 const disableLoading = ref(false);
-
-onMounted(async () => {
-  try {
-    await accountStore.fetchMfaStatus();
-  } finally {
-    mfaLoading.value = false;
-  }
-});
 
 async function handleStartSetup() {
   setupLoading.value = true;

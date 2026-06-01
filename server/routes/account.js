@@ -192,4 +192,65 @@ router.post('/mfa/disable', async (req, res) => {
   }
 });
 
+// ---------- Preferences ----------
+
+function serializePreferences(user) {
+  const preferences = user.preferences || {};
+  return {
+    thick_scrollbars: preferences.thick_scrollbars === true,
+  };
+}
+
+// GET /api/account/preferences
+router.get('/preferences', async (req, res) => {
+  try {
+    const db = getUsersDb();
+    const user = await db.get(req.user.sub);
+    res.json(serializePreferences(user));
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch preferences' });
+  }
+});
+
+// PUT /api/account/preferences
+router.put('/preferences', async (req, res) => {
+  const db = getUsersDb();
+
+  let user;
+  try {
+    user = await db.get(req.user.sub);
+  } catch {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  const body = req.body;
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return res.status(400).json({ error: 'Request body must be an object' });
+  }
+
+  const allowedKeys = new Set(['thick_scrollbars']);
+  const unknownKeys = Object.keys(body).filter((key) => !allowedKeys.has(key));
+  if (unknownKeys.length) {
+    return res.status(400).json({ error: `Unknown preference: ${unknownKeys[0]}` });
+  }
+
+  const preferences = {};
+
+  if (Object.prototype.hasOwnProperty.call(body, 'thick_scrollbars')) {
+    if (typeof body.thick_scrollbars !== 'boolean') {
+      return res.status(400).json({ error: 'thick_scrollbars must be a boolean' });
+    }
+    preferences.thick_scrollbars = body.thick_scrollbars;
+  }
+
+  user.preferences = { ...serializePreferences(user), ...preferences };
+
+  try {
+    await db.insert(user);
+    res.json(user.preferences);
+  } catch {
+    res.status(500).json({ error: 'Failed to update preferences' });
+  }
+});
+
 module.exports = router;
