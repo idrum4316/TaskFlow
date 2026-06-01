@@ -39,7 +39,7 @@
 
       <div class="flex min-h-0 flex-1 bg-zinc-50/70 dark:bg-zinc-950/40 lg:flex-row">
         <!-- Notes navigation -->
-        <aside :class="['min-h-0 w-full flex-col border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 lg:w-72 lg:border-r xl:w-80 2xl:w-96', activeNote ? (focusEditor ? 'hidden' : 'hidden lg:flex') : 'flex']">
+        <aside :class="['min-h-0 w-full flex-col border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 lg:w-72 lg:border-r xl:w-80 2xl:w-96', activeNote ? 'hidden lg:flex' : 'flex']">
           <div class="flex-shrink-0 space-y-3 border-b border-zinc-200 px-4 py-4 dark:border-zinc-800">
             <div class="relative">
               <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -54,7 +54,7 @@
               />
             </div>
 
-            <div class="grid grid-cols-3 gap-1 rounded-xl bg-zinc-100 p-1 dark:bg-zinc-800" role="tablist" aria-label="Note filters">
+            <div class="grid grid-cols-2 gap-1 rounded-xl bg-zinc-100 p-1 dark:bg-zinc-800" role="tablist" aria-label="Note filters">
               <button
                 v-for="filter in filters"
                 :key="filter.id"
@@ -293,18 +293,6 @@
 
                 <div class="flex flex-wrap items-center gap-2 lg:flex-shrink-0">
                   <button
-                    v-if="isEditing"
-                    type="button"
-                    @click="focusEditor = !focusEditor"
-                    class="btn-secondary hidden lg:inline-flex !px-3 !py-2"
-                  >
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path v-if="focusEditor" stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                      <path v-else stroke-linecap="round" stroke-linejoin="round" d="M3.75 9h16.5m-16.5 6h16.5M9 3.75v16.5" />
-                    </svg>
-                    {{ focusEditor ? 'Show list' : 'Focus' }}
-                  </button>
-                  <button
                     v-if="canEdit && !isNew"
                     type="button"
                     @click="togglePinned(activeNote)"
@@ -322,7 +310,6 @@
                     </svg>
                     Edit
                   </button>
-                  <button v-if="isEditing" type="button" @click="discardEdit" class="btn-secondary !px-3 !py-2">Cancel</button>
                   <button v-if="canDeleteNote(activeNote) && !isNew" type="button" @click="confirmDelete(activeNote)" class="btn-danger !px-3 !py-2">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79" />
@@ -487,6 +474,28 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- Discard changes confirmation -->
+    <Teleport to="body">
+      <div v-if="pendingDiscard" class="fixed inset-0 z-[60] flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Discard changes">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="resolveDiscard(false)" aria-hidden="true" />
+        <div class="relative mx-4 w-full max-w-sm rounded-2xl bg-white border border-zinc-200 dark:border-zinc-700 p-6 shadow-modal animate-scale-in dark:bg-zinc-900">
+          <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+          </div>
+          <h3 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">Discard changes?</h3>
+          <p class="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+            You have unsaved changes that will be lost. Are you sure you want to discard them?
+          </p>
+          <div class="mt-5 flex items-center gap-3">
+            <button type="button" @click="resolveDiscard(false)" class="btn-secondary flex-1">Keep editing</button>
+            <button type="button" @click="resolveDiscard(true)" class="btn-primary flex-1 !bg-amber-600 hover:!bg-amber-700">Discard</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -518,13 +527,13 @@ const editContent = ref('');
 const saveSuccess = ref(false);
 const errorMsg = ref('');
 const pendingDelete = ref(null);
+const pendingDiscard = ref(null);
 const contentEl = ref(null);
 const titleEl = ref(null);
 const searchQuery = ref('');
 const activeFilter = ref('all');
 const selectedTag = ref('');
 const editorMode = ref('write');
-const focusEditor = ref(false);
 
 let savedTimer = null;
 let initialNoteRequestId = 0;
@@ -565,7 +574,7 @@ const noteCountLabel = computed(() => {
 const filters = computed(() => [
   { id: 'all', label: 'All', count: notesStore.notes.length },
   { id: 'pinned', label: 'Pinned', count: notesStore.notes.filter((note) => note.pinned).length },
-  { id: 'mine', label: 'Mine', count: notesStore.notes.filter((note) => note.user_id === currentUserId.value).length },
+
 ]);
 
 const availableTags = computed(() => {
@@ -579,7 +588,6 @@ const filteredNotes = computed(() => {
 
   return sortedNotes.value.filter((note) => {
     if (activeFilter.value === 'pinned' && !note.pinned) return false;
-    if (activeFilter.value === 'mine' && note.user_id !== currentUserId.value) return false;
     if (selectedTag.value && !noteTags(note).includes(selectedTag.value)) return false;
 
     if (!query) return true;
@@ -657,14 +665,20 @@ async function openInitialNote() {
   }
 }
 
-function requestClose() {
-  if (!confirmDiscard()) return;
+async function requestClose() {
+  if (!await confirmDiscard()) return;
   emit('close');
 }
 
 function confirmDiscard() {
-  if (!isDirty.value) return true;
-  return window.confirm('Discard unsaved note changes?');
+  if (!isDirty.value) return Promise.resolve(true);
+  return new Promise((resolve) => { pendingDiscard.value = resolve; });
+}
+
+function resolveDiscard(confirmed) {
+  const resolve = pendingDiscard.value;
+  pendingDiscard.value = null;
+  resolve(confirmed);
 }
 
 function timestamp(iso) {
@@ -742,8 +756,8 @@ function noteTags(note) {
   return extractTags(`${note.title || ''} ${note.content || ''}`);
 }
 
-function openNote(note) {
-  if (isEditing.value && isDirty.value && !confirmDiscard()) return;
+async function openNote(note) {
+  if (isEditing.value && isDirty.value && !await confirmDiscard()) return;
   activeNote.value = note;
   isNew.value = false;
   isEditing.value = false;
@@ -751,11 +765,10 @@ function openNote(note) {
   editContent.value = note.content || '';
   errorMsg.value = '';
   saveSuccess.value = false;
-  focusEditor.value = false;
 }
 
-function startCreate() {
-  if (isEditing.value && isDirty.value && !confirmDiscard()) return;
+async function startCreate() {
+  if (isEditing.value && isDirty.value && !await confirmDiscard()) return;
   const now = new Date().toISOString();
   activeNote.value = {
     _id: null,
@@ -772,7 +785,6 @@ function startCreate() {
   editTitle.value = '';
   editContent.value = '';
   editorMode.value = 'write';
-  focusEditor.value = true;
   errorMsg.value = '';
   saveSuccess.value = false;
   nextTick(() => titleEl.value?.focus());
@@ -783,14 +795,13 @@ function startEdit() {
   editTitle.value = activeNote.value.title || '';
   editContent.value = activeNote.value.content || '';
   if (editorMode.value === 'preview') editorMode.value = 'write';
-  focusEditor.value = true;
   isEditing.value = true;
   errorMsg.value = '';
   nextTick(() => contentEl.value?.focus());
 }
 
-function discardEdit() {
-  if (!confirmDiscard()) return;
+async function discardEdit() {
+  if (!await confirmDiscard()) return;
   if (isNew.value) {
     backToList(true);
     return;
@@ -798,12 +809,11 @@ function discardEdit() {
   editTitle.value = activeNote.value?.title || '';
   editContent.value = activeNote.value?.content || '';
   isEditing.value = false;
-  focusEditor.value = false;
   errorMsg.value = '';
 }
 
-function backToList(force = false) {
-  if (!force && !confirmDiscard()) return;
+async function backToList(force = false) {
+  if (!force && !await confirmDiscard()) return;
   activeNote.value = null;
   isNew.value = false;
   isEditing.value = false;
@@ -811,7 +821,6 @@ function backToList(force = false) {
   editContent.value = '';
   saveSuccess.value = false;
   errorMsg.value = '';
-  focusEditor.value = false;
   clearTimeout(savedTimer);
 }
 
@@ -862,7 +871,6 @@ async function handleSave() {
     editTitle.value = activeNote.value.title || '';
     editContent.value = activeNote.value.content || '';
     isEditing.value = false;
-    focusEditor.value = false;
     showSaved();
   } catch {
     errorMsg.value = 'Failed to save note. Please try again.';
