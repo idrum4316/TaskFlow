@@ -61,7 +61,8 @@ services:
       S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       S3_BUCKET: ${S3_BUCKET:-task-attachments}
       S3_REGION: ${S3_REGION:-us-east-1}
-      MEILISEARCH_HOST: http://meilisearch:7700
+      MEILISEARCH_URL: ${MEILISEARCH_URL:-}
+      MEILISEARCH_HOST: ${MEILISEARCH_HOST:-http://meilisearch:7700}
       MEILISEARCH_API_KEY: ${MEILISEARCH_API_KEY:-masterKey}
     depends_on:
       couchdb:

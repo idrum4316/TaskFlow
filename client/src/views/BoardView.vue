@@ -198,31 +198,32 @@
           type="button"
           @click="toggleKanbanChecklistVisibility"
           :class="[
-            'inline-flex items-center gap-2 self-start rounded-lg border px-3 py-2 text-sm font-medium transition-colors',
+            'inline-flex flex-shrink-0 items-center gap-1.5 self-start sm:self-center rounded-lg border px-2.5 py-1.5 text-xs font-medium whitespace-nowrap transition-colors',
             showKanbanChecklist
               ? 'border-brand-500 bg-brand-50 text-brand-700 dark:border-brand-400 dark:bg-brand-900/30 dark:text-brand-300'
               : 'border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300 hover:text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-zinc-200',
           ]"
           :aria-pressed="showKanbanChecklist"
+          :title="showKanbanChecklist ? 'Hide checklist items on cards' : 'Show checklist items on cards'"
         >
           <span
             :class="[
-              'inline-flex h-5 w-5 items-center justify-center rounded border',
+              'inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-colors',
               showKanbanChecklist
                 ? 'border-brand-500 bg-brand-500 text-white dark:border-brand-400 dark:bg-brand-400'
                 : 'border-zinc-300 text-transparent dark:border-zinc-600',
             ]"
             aria-hidden="true"
           >
-            <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+            <svg class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
             </svg>
           </span>
-          <span>{{ showKanbanChecklist ? 'Hide checklist items' : 'Show checklist items' }}</span>
+          <span>Checklist</span>
         </button>
 
         <!-- Label filter -->
-        <div v-if="boardLabels.length" class="flex items-center gap-1.5 sm:ml-1 overflow-x-auto scrollbar-none min-w-0">
+        <div v-if="boardLabels.length" class="flex items-center gap-1.5 sm:ml-1 sm:flex-1 overflow-x-auto scrollbar-none min-w-0">
           <svg class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
           </svg>

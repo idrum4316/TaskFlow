@@ -4,7 +4,7 @@ const path = require('path');
 const cors = require('cors');
 const { initDb } = require('./config/couch');
 const { ensureBucket } = require('./config/s3');
-const { ensureIndexes } = require('./config/meili');
+const { ensureIndexes, host: meiliHost } = require('./config/meili');
 const { runMigrations } = require('./migrations/runner');
 const authRoutes = require('./routes/auth');
 const boardRoutes = require('./routes/boards');
@@ -54,6 +54,7 @@ app.get(/^\/(?!api).*/, (_req, res) => {
 
 async function start() {
   await initDb();
+  console.log(`Meilisearch host: ${meiliHost}`);
   await ensureIndexes();
   await ensureBucket();
   await runMigrations();
